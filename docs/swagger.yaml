@@ -1,0 +1,98 @@
+basePath: /
+definitions:
+  models.Login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.SignUp:
+    properties:
+      bio:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      profile_image:
+        type: string
+      username:
+        type: string
+    type: object
+  models.User:
+    properties:
+      bio:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      password_hash:
+        type: string
+      profile_image:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: This is a simple API for user registration
+  title: Econova API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Display welcome message
+      produces:
+      - application/json
+      responses: {}
+      summary: Home
+      tags:
+      - Home
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return user information
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: User Login
+      tags:
+      - Users
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignUp'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: User Registration
+      tags:
+      - Users
+swagger: "2.0"
