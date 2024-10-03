@@ -1,39 +1,193 @@
 basePath: /
 definitions:
+  models.Comment:
+    properties:
+      content:
+        type: string
+      hidden:
+        type: boolean
+      id:
+        type: string
+      productID:
+        type: string
+      userID:
+        type: string
+    type: object
+  models.CommentResponse:
+    properties:
+      content:
+        type: string
+      id:
+        type: string
+      is_owner:
+        type: boolean
+      product_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   models.Login:
     properties:
       email:
         type: string
       password:
         type: string
+    required:
+    - email
+    - password
     type: object
-  models.SignUp:
+  models.Product:
     properties:
-      bio:
+      category:
         type: string
-      email:
+      created_at:
         type: string
-      password:
-        type: string
-      profile_image:
-        type: string
-      username:
-        type: string
-    type: object
-  models.User:
-    properties:
-      bio:
-        type: string
-      email:
+      description:
         type: string
       id:
         type: string
-      password_hash:
+      name:
         type: string
-      profile_image:
+      price:
+        type: number
+      sub_category:
         type: string
-      username:
+      user_id:
         type: string
+    type: object
+  models.ProductResponse:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      sub_category:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.Rating:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      score:
+        type: number
+      user_id:
+        type: string
+    type: object
+  models.SendPasswordResetEmail:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  models.SignUp:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  models.Transaction:
+    properties:
+      action:
+        allOf:
+        - $ref: '#/definitions/models.TransactionAction'
+        description: Action type of the transaction
+      created_at:
+        description: Transaction timestamp
+        type: string
+      description:
+        description: Description of the transaction
+        type: string
+      hidden:
+        type: boolean
+      id:
+        description: Primary key, unique identifier for each transaction
+        type: string
+      image_url:
+        description: URL of the transaction image
+        type: string
+      item_id:
+        description: Reference to the item involved in the transaction
+        type: string
+      user_id:
+        description: Reference to the user performing the transaction
+        type: string
+    type: object
+  models.TransactionAction:
+    enum:
+    - submitted
+    - revitalized
+    - sold
+    type: string
+    x-enum-varnames:
+    - Submitted
+    - Revitalized
+    - Sold
+  models.UpdateEmail:
+    properties:
+      new_email:
+        type: string
+    required:
+    - new_email
+    type: object
+  models.UpdatePassword:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - new_password
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      verified:
+        type: boolean
+    type: object
+  models.VerifyEmail:
+    properties:
+      token:
+        type: string
+    required:
+    - token
     type: object
 host: localhost:3000
 info:
@@ -42,20 +196,100 @@ info:
   title: Econova API
   version: "1.0"
 paths:
-  /:
-    get:
-      description: Display welcome message
+  /comments:
+    post:
+      consumes:
+      - application/json
+      description: Create a new comment for a product by a user
+      parameters:
+      - description: Comment data
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/models.Comment'
       produces:
       - application/json
-      responses: {}
-      summary: Home
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CommentResponse'
+      summary: Create a Comment
       tags:
-      - Home
+      - Comments
+  /comments/{comment_id}/hide:
+    post:
+      consumes:
+      - application/json
+      description: Hide a specific comment by ID
+      parameters:
+      - description: Comment ID
+        in: path
+        name: comment_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CommentResponse'
+      summary: Hide a Comment
+      tags:
+      - Comments
+  /comments/product/{product_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all comments made on a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.CommentResponse'
+            type: array
+      summary: Get Comments by Product ID
+      tags:
+      - Comments
+  /comments/user/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all comments made by a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Comment'
+            type: array
+      summary: Get Comments by User ID
+      tags:
+      - Comments
   /login:
     post:
       consumes:
       - application/json
-      description: Authenticate a user and return user information
+      description: Authenticate a user and return a JWT token
       parameters:
       - description: Login credentials
         in: body
@@ -67,12 +301,211 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: token
           schema:
-            $ref: '#/definitions/models.User'
+            additionalProperties: true
+            type: object
       summary: User Login
       tags:
       - Users
+  /products:
+    post:
+      consumes:
+      - application/json
+      description: Create a new product with the given details
+      parameters:
+      - description: Product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/models.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ProductResponse'
+      summary: Create a new product
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product with the provided data
+      parameters:
+      - description: Updated product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/models.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductResponse'
+      summary: Update an existing product
+      tags:
+      - Products
+  /products/collaborative:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve products based on collaborative filtering with pagination
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Product'
+            type: array
+      summary: Get collaborative-based products
+      tags:
+      - Products
+  /products/content-based:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve products based on content, e.g., based on image URL
+      parameters:
+      - description: Image URL for content-based filtering
+        in: query
+        name: image_url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Product'
+            type: array
+      summary: Get content-based products
+      tags:
+      - Products
+  /products/user:
+    get:
+      description: Retrieve products that belong to a specific user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Product'
+            type: array
+      summary: Get products by user ID
+      tags:
+      - Products
+  /ratings/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a rating by its ID
+      parameters:
+      - description: Rating ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Delete a rating
+      tags:
+      - Ratings
+  /ratings/{user_id}/{product_id}:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new rating for a product by a user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: string
+      - description: Rating details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Rating'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Rating'
+      summary: Create a new rating
+      tags:
+      - Ratings
+  /ratings/product/{product_id}/average:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the average rating and the total number of ratings for
+        a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get average rating and count by product ID
+      tags:
+      - Ratings
+  /ratings/user/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all products rated by a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Rating'
+            type: array
+      summary: Get rated products by user ID
+      tags:
+      - Ratings
   /signup:
     post:
       consumes:
@@ -93,6 +526,164 @@ paths:
           schema:
             $ref: '#/definitions/models.User'
       summary: User Registration
+      tags:
+      - Users
+  /transactions/{id}/hide:
+    patch:
+      consumes:
+      - application/json
+      description: Hides a transaction by updating the hidden flag to true
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Hide transaction
+      tags:
+      - Transactions
+  /transactions/item/{item_id}/user/{user_id}:
+    post:
+      consumes:
+      - application/json
+      description: Adds a transaction (submitted, revitalized, or sold) to an item
+      parameters:
+      - description: Item ID
+        in: path
+        name: item_id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Transaction details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Transaction'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Transaction'
+      summary: Add transaction to item
+      tags:
+      - Transactions
+  /users:
+    put:
+      consumes:
+      - application/json
+      description: Update user information
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses: {}
+      summary: Update User
+      tags:
+      - Users
+  /users/{id}:
+    get:
+      description: Retrieve demographic information for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: Get User Demographics
+      tags:
+      - Users
+  /users/email:
+    put:
+      consumes:
+      - application/json
+      description: Update user's email address
+      parameters:
+      - description: New Email
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateEmail'
+      produces:
+      - application/json
+      responses: {}
+      summary: Update User Email
+      tags:
+      - Users
+  /users/email/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify the user's email using a token
+      parameters:
+      - description: Verification Token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyEmail'
+      produces:
+      - application/json
+      responses: {}
+      summary: Verify User Email
+      tags:
+      - Users
+  /users/password:
+    put:
+      consumes:
+      - application/json
+      description: Update user's password
+      parameters:
+      - description: New Password
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePassword'
+      produces:
+      - application/json
+      responses: {}
+      summary: Update User Password
+      tags:
+      - Users
+  /users/password/reset:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset email to the user
+      parameters:
+      - description: User Email
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendPasswordResetEmail'
+      produces:
+      - application/json
+      responses: {}
+      summary: Send Password Reset Email
       tags:
       - Users
 swagger: "2.0"

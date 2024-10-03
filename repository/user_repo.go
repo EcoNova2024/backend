@@ -1,88 +1,61 @@
+// backend/repository/user_repository.go
 package repository
 
 import (
 	"backend/models"
-	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-// UserRepository defines the interface for user-related database operations
-type UserRepository interface {
-	FindUserByEmail(email string) (*models.User, error)
-	CreateUser(signUp *models.SignUp) error
-	FindUserByID(id uuid.UUID) (*models.User, error)
-	UpdateUser(user *models.User) error
-	DeleteUser(id uuid.UUID) error
+type UserRepository struct {
+	db *gorm.DB
 }
 
-// userRepository implements the UserRepository interface
-type userRepository struct {
-	db *sql.DB
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-// NewUserRepository creates a new instance of userRepository
-func NewUserRepository(db *sql.DB) UserRepository {
-	return &userRepository{db: db}
+// Create inserts a new user into the database
+func (repo *UserRepository) Create(user *models.User) error {
+	return repo.db.Create(user).Error
 }
 
-// CreateUser inserts a new user into the database
-func (r *userRepository) CreateUser(signUp *models.SignUp) error {
-	// Generate a new UUID for the user
-	userID := uuid.New()
-
-	query := `
-        INSERT INTO users (id, username, email, password_hash, profile_image, bio) 
-        VALUES (?, ?, ?, ?, ?, ?)`
-	_, err := r.db.Exec(query, userID, signUp.Username, signUp.Email, signUp.Password, signUp.ProfileImage, signUp.Bio)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// FindUserByEmail retrieves a user by their email address
-func (r *userRepository) FindUserByEmail(email string) (*models.User, error) {
+// GetByEmail retrieves a user by their email
+func (repo *UserRepository) GetByEmail(email string) (*models.User, error) {
 	var user models.User
-	query := `SELECT id, username, email, password_hash, profile_image, bio FROM users WHERE email = ?`
-	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.ProfileImage, &user.Bio)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // No user found
+	if err := repo.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
 		}
 		return nil, err
 	}
 	return &user, nil
 }
 
-// FindUserByID retrieves a user by their ID
-func (r *userRepository) FindUserByID(id uuid.UUID) (*models.User, error) {
+// GetByID retrieves a user by their ID
+func (repo *UserRepository) GetByID(id string) (*models.User, error) {
 	var user models.User
-	query := `SELECT id, username, email, password_hash, profile_image, bio FROM users WHERE id = ?`
-	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.ProfileImage, &user.Bio)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // No user found
+	if err := repo.db.First(&user, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
 		}
 		return nil, err
 	}
 	return &user, nil
 }
 
-// UpdateUser updates an existing user's information
-func (r *userRepository) UpdateUser(user *models.User) error {
-	query := `
-        UPDATE users 
-        SET username = ?, email = ?, password_hash = ?, profile_image = ?, bio = ? 
-        WHERE id = ?`
-	_, err := r.db.Exec(query, user.Username, user.Email, user.PasswordHash, user.ProfileImage, user.Bio, user.ID)
-	return err
+// Update modifies an existing user's information
+func (repo *UserRepository) Update(userID string, user *models.User) error {
+	return repo.db.Model(&models.User{}).Where("id = ?", userID).Updates(user).Error
 }
 
-// DeleteUser removes a user from the database
-func (r *userRepository) DeleteUser(id uuid.UUID) error {
-	query := `DELETE FROM users WHERE id = ?`
-	_, err := r.db.Exec(query, id)
-	return err
+// UpdateEmail modifies an existing user's email
+func (repo *UserRepository) UpdateEmail(userID, newEmail string) error {
+	return repo.db.Model(&models.User{}).Where("id = ?", userID).Update("email", newEmail).Error
+}
+
+// UpdatePassword modifies an existing user's password
+func (repo *UserRepository) UpdatePassword(userID, hashedPassword string) error {
+	return repo.db.Model(&models.User{}).Where("id = ?", userID).Update("password", hashedPassword).Error
 }

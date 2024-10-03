@@ -1,25 +1,37 @@
 package repository
 
-import (
-	"database/sql"
-)
+import "gorm.io/gorm"
 
-// RepositoryFactory defines the interface for creating repositories
-type RepositoryFactory interface {
-	NewUserRepository() UserRepository
+// RepositoryFactory holds the database connection and creates repositories
+type RepositoryFactory struct {
+	db *gorm.DB
 }
 
-// repositoryFactory is the concrete implementation of RepositoryFactory
-type repositoryFactory struct {
-	db *sql.DB
+// NewRepositoryFactory creates a new factory with the GORM database connection
+func NewRepositoryFactory(db *gorm.DB) *RepositoryFactory {
+	return &RepositoryFactory{db: db}
 }
 
-// NewRepositoryFactory creates a new instance of repositoryFactory
-func NewRepositoryFactory(db *sql.DB) RepositoryFactory {
-	return &repositoryFactory{db: db}
+// GetProductRepository returns a new instance of ProductRepository
+func (f *RepositoryFactory) GetProductRepository() *ProductRepository {
+	return NewProductRepository(f.db)
 }
 
-// NewUserRepository creates a new instance of UserRepository
-func (f *repositoryFactory) NewUserRepository() UserRepository {
+// GetRatingRepository returns a new instance of RatingRepository
+func (f *RepositoryFactory) GetRatingRepository() *RatingRepository {
+	return NewRatingRepository(f.db)
+}
+
+// GetUserRepository returns a new instance of UserRepository
+func (f *RepositoryFactory) GetUserRepository() *UserRepository {
 	return NewUserRepository(f.db)
+}
+
+// GetCommentsRepository returns a new instance of CommentsRepository
+func (f *RepositoryFactory) GetCommentsRepository() *CommentsRepository {
+	return NewCommentsRepository(f.db)
+}
+
+func (f *RepositoryFactory) GetTransactionRepository() *TransactionRepository {
+	return NewTransactionRepository(f.db)
 }
