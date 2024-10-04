@@ -29,8 +29,12 @@ func HashPassword(password string) (string, error) {
 
 // CheckPasswordHash checks if the provided password matches the hashed password
 func CheckPasswordHash(password, hash string) bool {
+	// Replace $2y$ with $2a$ for compatibility
+	if strings.HasPrefix(hash, "$2y$") {
+		hash = "$2a$" + hash[4:] // Replace $2y$ with $2a$
+	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(password), []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
