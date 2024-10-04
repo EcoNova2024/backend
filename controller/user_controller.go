@@ -27,9 +27,11 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Produce      json
 // @Param        user  body  models.SignUp  true  "User data"
 // @Success      201   {object} models.User
-// @Router       /signup [post]
+// @Failure      400   {object} map[string]string  "Invalid input"
+// @Failure      500   {object} map[string]string  "Failed to create user"
+// @Router       /users/signup [post]
 func (controller *UserController) SignUp(c *gin.Context) {
-	var user models.User
+	var user models.SignUp
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
@@ -52,7 +54,9 @@ func (controller *UserController) SignUp(c *gin.Context) {
 // @Produce      json
 // @Param        login  body  models.Login  true  "Login credentials"
 // @Success      200    {object} map[string]interface{} "token"
-// @Router       /login [post]
+// @Failure      400    {object} map[string]string  "Invalid input"
+// @Failure      401    {object} map[string]string  "Invalid credentials"
+// @Router       /users/login [post]
 func (controller *UserController) Login(c *gin.Context) {
 	var loginData models.Login
 	if err := c.ShouldBindJSON(&loginData); err != nil {
@@ -76,6 +80,7 @@ func (controller *UserController) Login(c *gin.Context) {
 // @Produce      json
 // @Param        id  path  string  true  "User ID"
 // @Success      200 {object} models.User
+// @Failure      404 {object} map[string]string  "User not found"
 // @Router       /users/{id} [get]
 func (controller *UserController) GetDemographicInformation(c *gin.Context) {
 	id := c.Param("id")
@@ -96,15 +101,18 @@ func (controller *UserController) GetDemographicInformation(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        user  body  models.User  true  "User data"
+// @Success      200   {object} models.User
+// @Failure      400   {object} map[string]string  "Invalid input"
+// @Failure      401   {object} map[string]string  "User ID not found"
+// @Failure      500   {object} map[string]string  "Failed to update user"
 // @Router       /users [put]
 func (controller *UserController) UpdateUser(c *gin.Context) {
-	var user models.User
+	var user models.UpdateUser
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
-	// Retrieve user ID from context locals
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
@@ -126,6 +134,10 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        email  body  models.UpdateEmail  true  "New Email"
+// @Success      200    {object} map[string]string  "Email updated successfully"
+// @Failure      400    {object} map[string]string  "Invalid input"
+// @Failure      401    {object} map[string]string  "User ID not found"
+// @Failure      500    {object} map[string]string  "Failed to update email"
 // @Router       /users/email [put]
 func (controller *UserController) UpdateEmail(c *gin.Context) {
 	var emailData models.UpdateEmail
@@ -134,7 +146,6 @@ func (controller *UserController) UpdateEmail(c *gin.Context) {
 		return
 	}
 
-	// Retrieve user ID from context locals
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
@@ -156,6 +167,10 @@ func (controller *UserController) UpdateEmail(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        password  body  models.UpdatePassword  true  "New Password"
+// @Success      200    {object} map[string]string  "Password updated successfully"
+// @Failure      400    {object} map[string]string  "Invalid input"
+// @Failure      401    {object} map[string]string  "User ID not found"
+// @Failure      500    {object} map[string]string  "Failed to update password"
 // @Router       /users/password [put]
 func (controller *UserController) UpdatePassword(c *gin.Context) {
 	var passwordData models.UpdatePassword
@@ -164,7 +179,6 @@ func (controller *UserController) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	// Retrieve user ID from context locals
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
@@ -186,6 +200,9 @@ func (controller *UserController) UpdatePassword(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        email  body  models.SendPasswordResetEmail  true  "User Email"
+// @Success      200    {object} map[string]string  "Password reset email sent successfully"
+// @Failure      400    {object} map[string]string  "Invalid input"
+// @Failure      500    {object} map[string]string  "Failed to send reset email"
 // @Router       /users/password/reset [post]
 func (controller *UserController) SendPasswordResetEmail(c *gin.Context) {
 	var emailData models.SendPasswordResetEmail
@@ -208,19 +225,48 @@ func (controller *UserController) SendPasswordResetEmail(c *gin.Context) {
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        token  body  models.VerifyEmail  true  "Verification Token"
-// @Router       /users/email/verify [post]
+// @Param        token  query  string  true  "Email Verification Token"
+// @Success      200    {object} map[string]string  "Email verified successfully"
+// @Failure      400    {object} map[string]string  "Invalid token"
+// @Failure      500    {object} map[string]string  "Failed to verify email"
+// @Router       /users/email/verify [get]
 func (controller *UserController) VerifyEmail(c *gin.Context) {
-	var verifyData models.VerifyEmail
-	if err := c.ShouldBindJSON(&verifyData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid token"})
 		return
 	}
 
-	if err := controller.userService.VerifyEmail(verifyData.Token); err != nil {
+	if err := controller.userService.VerifyEmail(token); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify email", "details": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Email verified successfully"})
+}
+
+// SendEmailVerification handles sending an email verification link
+// @Summary      Send Email Verification
+// @Description  Sends an email verification link to the user's email
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        email  body  models.SendEmailVerification  true  "User Email"
+// @Success      200    {object} map[string]string  "Verification email sent successfully"
+// @Failure      400    {object} map[string]string  "Invalid input"
+// @Failure      500    {object} map[string]string  "Failed to send verification email"
+// @Router       /users/email/send-verification [post]
+func (controller *UserController) SendEmailVerification(c *gin.Context) {
+	var emailData models.SendEmailVerification
+	if err := c.ShouldBindJSON(&emailData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
+		return
+	}
+
+	if err := controller.userService.SendEmailVerification(emailData.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Verification email sent successfully"})
 }

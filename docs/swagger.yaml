@@ -1,4 +1,3 @@
-basePath: /
 definitions:
   models.Comment:
     properties:
@@ -87,6 +86,13 @@ definitions:
       user_id:
         type: string
     type: object
+  models.SendEmailVerification:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   models.SendPasswordResetEmail:
     properties:
       email:
@@ -98,17 +104,16 @@ definitions:
     properties:
       email:
         type: string
-      first_name:
+      image_url:
         type: string
-      last_name:
+      name:
         type: string
       password:
         minLength: 8
         type: string
     required:
     - email
-    - first_name
-    - last_name
+    - name
     - password
     type: object
   models.Transaction:
@@ -169,30 +174,20 @@ definitions:
         type: string
       email:
         type: string
-      first_name:
-        type: string
       id:
         type: string
       image_url:
         type: string
-      last_name:
+      name:
         type: string
       password:
         type: string
       verified:
         type: boolean
     type: object
-  models.VerifyEmail:
-    properties:
-      token:
-        type: string
-    required:
-    - token
-    type: object
-host: localhost:3000
 info:
   contact: {}
-  description: This is a simple API for user registration
+  description: Bearer token for authorization
   title: Econova API
   version: "1.0"
 paths:
@@ -285,29 +280,6 @@ paths:
       summary: Get Comments by User ID
       tags:
       - Comments
-  /login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate a user and return a JWT token
-      parameters:
-      - description: Login credentials
-        in: body
-        name: login
-        required: true
-        schema:
-          $ref: '#/definitions/models.Login'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: token
-          schema:
-            additionalProperties: true
-            type: object
-      summary: User Login
-      tags:
-      - Users
   /products:
     post:
       consumes:
@@ -506,28 +478,6 @@ paths:
       summary: Get rated products by user ID
       tags:
       - Ratings
-  /signup:
-    post:
-      consumes:
-      - application/json
-      description: Register a new user
-      parameters:
-      - description: User data
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.SignUp'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.User'
-      summary: User Registration
-      tags:
-      - Users
   /transactions/{id}/hide:
     patch:
       consumes:
@@ -591,7 +541,29 @@ paths:
           $ref: '#/definitions/models.User'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: User ID not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Update User
       tags:
       - Users
@@ -611,6 +583,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.User'
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Get User Demographics
       tags:
       - Users
@@ -628,26 +606,138 @@ paths:
           $ref: '#/definitions/models.UpdateEmail'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Email updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: User ID not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update email
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Update User Email
       tags:
       - Users
-  /users/email/verify:
+  /users/email/send-verification:
     post:
+      consumes:
+      - application/json
+      description: Sends an email verification link to the user's email
+      parameters:
+      - description: User Email
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendEmailVerification'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email sent successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to send verification email
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send Email Verification
+      tags:
+      - Users
+  /users/email/verify:
+    get:
       consumes:
       - application/json
       description: Verify the user's email using a token
       parameters:
-      - description: Verification Token
-        in: body
+      - description: Email Verification Token
+        in: query
         name: token
         required: true
-        schema:
-          $ref: '#/definitions/models.VerifyEmail'
+        type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to verify email
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Verify User Email
+      tags:
+      - Users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Login
       tags:
       - Users
   /users/password:
@@ -664,7 +754,31 @@ paths:
           $ref: '#/definitions/models.UpdatePassword'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Password updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: User ID not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Update User Password
       tags:
       - Users
@@ -682,8 +796,68 @@ paths:
           $ref: '#/definitions/models.SendPasswordResetEmail'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: Password reset email sent successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to send reset email
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Send Password Reset Email
       tags:
       - Users
+  /users/signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignUp'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Registration
+      tags:
+      - Users
+security:
+- ApiKeyAuth: []
+securityDefinitions:
+  ApiKeyAuth:
+    description: Bearer token for authorization
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

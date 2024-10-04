@@ -18,8 +18,15 @@ import (
 // @title Econova API
 // @version 1.0
 // @description This is a simple API for user registration
-// @host localhost:3000
-// @BasePath /
+// @Security ApiKeyAuth
+// @In header
+// @Name Authorization
+// @Description Bearer token for authorization
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @description Bearer token for authorization
 func main() {
 	// Load environment variables
 	loadEnv()
@@ -54,10 +61,9 @@ func loadEnv() {
 }
 
 // setupCORS configures CORS middleware for the Gin router
-// setupCORS configures CORS middleware for the Gin router
 func setupCORS(router *gin.Engine) {
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{os.Getenv("FE_PORT")}, // Change this to your frontend's URL or use "*" for all
+		AllowOrigins: []string{os.Getenv("FE_PORT")},
 		AllowMethods: []string{"GET,POST,PUT,DELETE,OPTIONS"},
 		AllowHeaders: []string{"Origin, Content-Type, Accept, Authorization"},
 	}))

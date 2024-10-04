@@ -52,7 +52,12 @@ func (repo *UserRepository) Update(userID string, user *models.User) error {
 
 // UpdateEmail modifies an existing user's email
 func (repo *UserRepository) UpdateEmail(userID, newEmail string) error {
-	return repo.db.Model(&models.User{}).Where("id = ?", userID).Update("email", newEmail).Error
+	return repo.db.Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"email":    newEmail,
+			"verified": false,
+		}).Error
 }
 
 // UpdatePassword modifies an existing user's password
