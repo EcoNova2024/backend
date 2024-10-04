@@ -525,7 +525,7 @@ const docTemplate = `{
         },
         "/users": {
             "put": {
-                "description": "Update user information",
+                "description": "Update user information with provided user data.",
                 "consumes": [
                     "application/json"
                 ],
@@ -538,18 +538,18 @@ const docTemplate = `{
                 "summary": "Update User",
                 "parameters": [
                     {
-                        "description": "User data",
+                        "description": "User data for update",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UpdateUser"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "User updated successfully",
                         "schema": {
                             "$ref": "#/definitions/models.User"
                         }
@@ -586,7 +586,7 @@ const docTemplate = `{
         },
         "/users/email": {
             "put": {
-                "description": "Update user's email address",
+                "description": "Update user's email address with a new email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -599,7 +599,7 @@ const docTemplate = `{
                 "summary": "Update User Email",
                 "parameters": [
                     {
-                        "description": "New Email",
+                        "description": "New Email for update",
                         "name": "email",
                         "in": "body",
                         "required": true,
@@ -703,62 +703,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/email/verify": {
-            "get": {
-                "description": "Verify the user's email using a token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Verify User Email",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Email Verification Token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Email verified successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to verify email",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/users/login": {
             "post": {
-                "description": "Authenticate a user and return a JWT token",
+                "description": "Authenticate a user and return a JWT token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -771,7 +718,7 @@ const docTemplate = `{
                 "summary": "User Login",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Login credentials for authentication",
                         "name": "login",
                         "in": "body",
                         "required": true,
@@ -782,7 +729,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "token",
+                        "description": "JWT token",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -811,7 +758,7 @@ const docTemplate = `{
         },
         "/users/password": {
             "put": {
-                "description": "Update user's password",
+                "description": "Update user's password with a new password using a reset token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -824,7 +771,14 @@ const docTemplate = `{
                 "summary": "Update User Password",
                 "parameters": [
                     {
-                        "description": "New Password",
+                        "type": "string",
+                        "description": "JWT token for user authentication",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "New Password for update",
                         "name": "password",
                         "in": "body",
                         "required": true,
@@ -853,7 +807,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "User ID not found",
+                        "description": "Invalid or expired token",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -875,7 +829,7 @@ const docTemplate = `{
         },
         "/users/password/reset": {
             "post": {
-                "description": "Sends a password reset email to the user",
+                "description": "Sends a password reset email to the user with provided email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -888,7 +842,7 @@ const docTemplate = `{
                 "summary": "Send Password Reset Email",
                 "parameters": [
                     {
-                        "description": "User Email",
+                        "description": "User Email for password reset",
                         "name": "email",
                         "in": "body",
                         "required": true,
@@ -930,7 +884,7 @@ const docTemplate = `{
         },
         "/users/signup": {
             "post": {
-                "description": "Register a new user",
+                "description": "Register a new user with provided user data.",
                 "consumes": [
                     "application/json"
                 ],
@@ -943,7 +897,7 @@ const docTemplate = `{
                 "summary": "User Registration",
                 "parameters": [
                     {
-                        "description": "User data",
+                        "description": "User data for registration",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -954,7 +908,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "User created successfully",
                         "schema": {
                             "$ref": "#/definitions/models.User"
                         }
@@ -980,9 +934,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/verify": {
+            "post": {
+                "description": "Verify the user's email address using a verification token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Verify User Email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email verified successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to verify email",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}": {
             "get": {
-                "description": "Retrieve demographic information for a specific user",
+                "description": "Retrieve demographic information for a specific user by ID.",
                 "produces": [
                     "application/json"
                 ],
@@ -1001,7 +1008,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "User demographic information",
                         "schema": {
                             "$ref": "#/definitions/models.User"
                         }
@@ -1269,6 +1276,23 @@ const docTemplate = `{
             ],
             "properties": {
                 "new_password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "models.UpdateUser": {
+            "type": "object",
+            "required": [
+                "new_image",
+                "new_user"
+            ],
+            "properties": {
+                "new_image": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "new_user": {
                     "type": "string",
                     "minLength": 6
                 }

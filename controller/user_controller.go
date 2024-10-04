@@ -21,14 +21,14 @@ func NewUserController(userService *service.UserService) *UserController {
 
 // SignUp handles user registration or creation
 // @Summary      User Registration
-// @Description  Register a new user
+// @Description  Register a new user with provided user data.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        user  body  models.SignUp  true  "User data"
-// @Success      201   {object} models.User
-// @Failure      400   {object} map[string]string  "Invalid input"
-// @Failure      500   {object} map[string]string  "Failed to create user"
+// @Param        user  body  models.SignUp  true  "User data for registration"
+// @Success      201   {object} models.User              "User created successfully"
+// @Failure      400   {object} map[string]string        "Invalid input"
+// @Failure      500   {object} map[string]string        "Failed to create user"
 // @Router       /users/signup [post]
 func (controller *UserController) SignUp(c *gin.Context) {
 	var user models.SignUp
@@ -48,14 +48,14 @@ func (controller *UserController) SignUp(c *gin.Context) {
 
 // Login handles user authentication
 // @Summary      User Login
-// @Description  Authenticate a user and return a JWT token
+// @Description  Authenticate a user and return a JWT token.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        login  body  models.Login  true  "Login credentials"
-// @Success      200    {object} map[string]interface{} "token"
-// @Failure      400    {object} map[string]string  "Invalid input"
-// @Failure      401    {object} map[string]string  "Invalid credentials"
+// @Param        login  body  models.Login  true  "Login credentials for authentication"
+// @Success      200    {object} map[string]interface{} "JWT token"
+// @Failure      400    {object} map[string]string       "Invalid input"
+// @Failure      401    {object} map[string]string       "Invalid credentials"
 // @Router       /users/login [post]
 func (controller *UserController) Login(c *gin.Context) {
 	var loginData models.Login
@@ -75,12 +75,12 @@ func (controller *UserController) Login(c *gin.Context) {
 
 // GetDemographicInformation retrieves demographic information for a user
 // @Summary      Get User Demographics
-// @Description  Retrieve demographic information for a specific user
+// @Description  Retrieve demographic information for a specific user by ID.
 // @Tags         Users
 // @Produce      json
 // @Param        id  path  string  true  "User ID"
-// @Success      200 {object} models.User
-// @Failure      404 {object} map[string]string  "User not found"
+// @Success      200 {object} models.User              "User demographic information"
+// @Failure      404 {object} map[string]string        "User not found"
 // @Router       /users/{id} [get]
 func (controller *UserController) GetDemographicInformation(c *gin.Context) {
 	id := c.Param("id")
@@ -96,15 +96,15 @@ func (controller *UserController) GetDemographicInformation(c *gin.Context) {
 
 // UpdateUser handles updating user information
 // @Summary      Update User
-// @Description  Update user information
+// @Description  Update user information with provided user data.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        user  body  models.User  true  "User data"
-// @Success      200   {object} models.User
-// @Failure      400   {object} map[string]string  "Invalid input"
-// @Failure      401   {object} map[string]string  "User ID not found"
-// @Failure      500   {object} map[string]string  "Failed to update user"
+// @Param        user  body  models.UpdateUser  true  "User data for update"
+// @Success      200   {object} models.User               "User updated successfully"
+// @Failure      400   {object} map[string]string         "Invalid input"
+// @Failure      401   {object} map[string]string         "User ID not found"
+// @Failure      500   {object} map[string]string         "Failed to update user"
 // @Router       /users [put]
 func (controller *UserController) UpdateUser(c *gin.Context) {
 	var user models.UpdateUser
@@ -129,15 +129,15 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 
 // UpdateEmail handles updating a user's email address
 // @Summary      Update User Email
-// @Description  Update user's email address
+// @Description  Update user's email address with a new email.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        email  body  models.UpdateEmail  true  "New Email"
-// @Success      200    {object} map[string]string  "Email updated successfully"
-// @Failure      400    {object} map[string]string  "Invalid input"
-// @Failure      401    {object} map[string]string  "User ID not found"
-// @Failure      500    {object} map[string]string  "Failed to update email"
+// @Param        email  body  models.UpdateEmail  true  "New Email for update"
+// @Success      200    {object} map[string]string       "Email updated successfully"
+// @Failure      400    {object} map[string]string       "Invalid input"
+// @Failure      401    {object} map[string]string       "User ID not found"
+// @Failure      500    {object} map[string]string       "Failed to update email"
 // @Router       /users/email [put]
 func (controller *UserController) UpdateEmail(c *gin.Context) {
 	var emailData models.UpdateEmail
@@ -160,33 +160,39 @@ func (controller *UserController) UpdateEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email updated successfully"})
 }
 
-// UpdatePassword handles updating a user's password
+// UpdatePassword handles updating a user's password using a reset token
 // @Summary      Update User Password
-// @Description  Update user's password
+// @Description  Update user's password with a new password using a reset token.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        password  body  models.UpdatePassword  true  "New Password"
-// @Success      200    {object} map[string]string  "Password updated successfully"
-// @Failure      400    {object} map[string]string  "Invalid input"
-// @Failure      401    {object} map[string]string  "User ID not found"
-// @Failure      500    {object} map[string]string  "Failed to update password"
+// @Param        token  query  string  true  "JWT token for user authentication"
+// @Param        password  body  models.UpdatePassword  true  "New Password for update"
+// @Success      200      {object} map[string]string      "Password updated successfully"
+// @Failure      400      {object} map[string]string      "Invalid input"
+// @Failure      401      {object} map[string]string      "Invalid or expired token"
+// @Failure      500      {object} map[string]string      "Failed to update password"
 // @Router       /users/password [put]
 func (controller *UserController) UpdatePassword(c *gin.Context) {
+	token := c.Query("token")
 	var passwordData models.UpdatePassword
+
+	// Validate the JWT token using the service layer
+	userID, err := controller.userService.ValidateToken(token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Bind the new password
 	if err := c.ShouldBindJSON(&passwordData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
-		return
-	}
-
-	if err := controller.userService.UpdatePassword(userID.(string), passwordData.NewPassword); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password", "details": err.Error()})
+	// Update the user's password
+	if err := controller.userService.UpdatePassword(userID, passwordData.NewPassword); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset password", "details": err.Error()})
 		return
 	}
 
@@ -195,14 +201,14 @@ func (controller *UserController) UpdatePassword(c *gin.Context) {
 
 // SendPasswordResetEmail handles sending a password reset email
 // @Summary      Send Password Reset Email
-// @Description  Sends a password reset email to the user
+// @Description  Sends a password reset email to the user with provided email.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        email  body  models.SendPasswordResetEmail  true  "User Email"
-// @Success      200    {object} map[string]string  "Password reset email sent successfully"
-// @Failure      400    {object} map[string]string  "Invalid input"
-// @Failure      500    {object} map[string]string  "Failed to send reset email"
+// @Param        email  body  models.SendPasswordResetEmail  true  "User Email for password reset"
+// @Success      200    {object} map[string]string          "Password reset email sent successfully"
+// @Failure      400    {object} map[string]string          "Invalid input"
+// @Failure      500    {object} map[string]string          "Failed to send reset email"
 // @Router       /users/password/reset [post]
 func (controller *UserController) SendPasswordResetEmail(c *gin.Context) {
 	var emailData models.SendPasswordResetEmail
@@ -211,6 +217,7 @@ func (controller *UserController) SendPasswordResetEmail(c *gin.Context) {
 		return
 	}
 
+	// Send the password reset email
 	if err := controller.userService.SendPasswordResetEmail(emailData.Email); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send reset email", "details": err.Error()})
 		return
@@ -219,26 +226,23 @@ func (controller *UserController) SendPasswordResetEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset email sent successfully"})
 }
 
-// VerifyEmail handles email verification
+// VerifyEmail handles verifying a user's email address
 // @Summary      Verify User Email
-// @Description  Verify the user's email using a token
+// @Description  Verify the user's email address using a verification token.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        token  query  string  true  "Email Verification Token"
-// @Success      200    {object} map[string]string  "Email verified successfully"
-// @Failure      400    {object} map[string]string  "Invalid token"
-// @Failure      500    {object} map[string]string  "Failed to verify email"
-// @Router       /users/email/verify [get]
+// @Param        token  query  string  true  "Verification token"
+// @Success      200    {object} map[string]string       "Email verified successfully"
+// @Failure      400    {object} map[string]string       "Invalid token"
+// @Failure      500    {object} map[string]string       "Failed to verify email"
+// @Router       /users/verify [post]
 func (controller *UserController) VerifyEmail(c *gin.Context) {
 	token := c.Query("token")
-	if token == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid token"})
-		return
-	}
 
+	// Verify the email using the token
 	if err := controller.userService.VerifyEmail(token); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify email", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid token", "details": err.Error()})
 		return
 	}
 

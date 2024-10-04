@@ -6,7 +6,10 @@ import (
 	"backend/repository"
 	"errors"
 	"fmt"
+	"os"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 var (
@@ -101,19 +104,32 @@ func (service *UserService) UpdateEmail(userID, newEmail string) error {
 	return service.userRepo.UpdateEmail(userID, newEmail)
 }
 
-func (service *UserService) UpdatePassword(userID, newPassword string) error {
-	hashedPassword, err := HashPassword(newPassword)
-	if err != nil {
-		return ErrInternal
-	}
-	return service.userRepo.UpdatePassword(userID, hashedPassword)
-}
-
 func (service *UserService) SendPasswordResetEmail(email string) error {
-	return nil
-}
+	// Check if the user exists
+	user, err := service.userRepo.GetByEmail(email)
+	if err != nil {
+		return errors.New("user not found")
+	}
 
-func (service *UserService) VerifyEmail(token string) error {
+	// Generate a password reset token
+	resetToken, err := GeneratePasswordResetToken(user.ID.String())
+	if err != nil {
+		return errors.New("failed to generate password reset token")
+	}
+
+	// Create the reset link
+	resetLink := fmt.Sprintf("https://yourfrontend.com/reset-password?token=%s", resetToken)
+
+	// Prepare email content
+	subject := "Password Reset Request"
+	body := fmt.Sprintf("To reset your password, click the following link: %s", resetLink)
+
+	// Send the email
+	err = SendEmail(user.Email, subject, body)
+	if err != nil {
+		return errors.New("failed to send password reset email")
+	}
+
 	return nil
 }
 
@@ -131,7 +147,7 @@ func (service *UserService) SendEmailVerification(email string) error {
 	}
 
 	// Create verification link
-	verificationLink := fmt.Sprintf("https://yourfrontend.com/verify-email?token=%s", verificationToken)
+	verificationLink := fmt.Sprintf("https://%s/verify-email?token=%s", os.Getenv("FE_PORT"), verificationToken)
 
 	// Prepare email content
 	subject := "Email Verification"
@@ -141,6 +157,52 @@ func (service *UserService) SendEmailVerification(email string) error {
 	err = SendEmail(user.Email, subject, body)
 	if err != nil {
 		return errors.New("failed to send verification email")
+	}
+
+	return nil
+}
+func (service *UserService) UpdatePassword(userID, newPassword string) error {
+	hashedPassword, err := HashPassword(newPassword)
+	if err != nil {
+		return ErrInternal
+	}
+	return service.userRepo.UpdatePassword(userID, hashedPassword)
+}
+
+// ValidateToken checks if the reset token is a valid JWT and extracts the user ID
+func (service *UserService) ValidateToken(token string) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET") // Fetch secret from environment variable
+
+	// Parse the token
+	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+		return []byte(jwtSecret), nil
+	})
+
+	if err != nil || !parsedToken.Valid {
+		return "", errors.New("invalid token")
+	}
+
+	// Extract user ID from claims
+	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+		userID := claims["user_id"].(string) // Extract user_id from JWT claims
+		return userID, nil
+	}
+
+	return "", errors.New("invalid token claims")
+}
+func (service *UserService) VerifyEmail(token string) error {
+	// Validate the token and extract user ID
+	userID, err := service.ValidateToken(token)
+	if err != nil {
+		return errors.New("invalid or expired token")
+	}
+
+	// Update user's verification status
+	if err := service.userRepo.VerifyEmail(userID); err != nil {
+		return errors.New("failed to verify email")
 	}
 
 	return nil

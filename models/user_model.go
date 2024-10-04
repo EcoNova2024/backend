@@ -4,6 +4,7 @@ package models
 import (
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 )
 
@@ -57,4 +58,8 @@ type VerifyEmail struct {
 }
 type SendEmailVerification struct {
 	Email string `json:"email" binding:"required,email"`
+}
+type PasswordResetClaims struct {
+	UserID string `json:"user_id"`
+	jwt.StandardClaims
 }

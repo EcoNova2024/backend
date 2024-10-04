@@ -42,14 +42,15 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// User routes
 	users := router.Group("/users")
 	{
-		users.POST("/signup", userController.SignUp)                                // User Registration
-		users.POST("/login", userController.Login)                                  // User Login
-		users.GET("/:id", userController.GetDemographicInformation)                 // Get User Demographics
-		users.PUT("/", middleware.JWTAuth(), userController.UpdateUser)             // Update User Information
-		users.PUT("/email", middleware.JWTAuth(), userController.UpdateEmail)       // Update User Email
-		users.PUT("/password", middleware.JWTAuth(), userController.UpdatePassword) // Update User Password
-		users.POST("/password/reset", userController.SendPasswordResetEmail)        // Send Password Reset Email
-		users.POST("/email/verify", userController.VerifyEmail)                     // Verify User Email
+		users.POST("/signup", userController.SignUp)                                 // DONE!
+		users.POST("/login", userController.Login)                                   // DONE!
+		users.GET("/:id", userController.GetDemographicInformation)                  // DONE!
+		users.PUT("/", middleware.JWTAuth(), userController.UpdateUser)              // DONE!
+		users.PUT("/email", middleware.JWTAuth(), userController.UpdateEmail)        // DONE!
+		users.PUT("/password", userController.UpdatePassword)                        // DONE!
+		users.POST("/password/reset", userController.SendPasswordResetEmail)         // DONE!
+		users.POST("/verify", userController.VerifyEmail)                            // DONE!
+		users.POST("/email/send-verification", userController.SendEmailVerification) // DONE!
 	}
 
 	// Product routes

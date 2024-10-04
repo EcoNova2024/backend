@@ -168,6 +168,18 @@ definitions:
     required:
     - new_password
     type: object
+  models.UpdateUser:
+    properties:
+      new_image:
+        minLength: 6
+        type: string
+      new_user:
+        minLength: 6
+        type: string
+    required:
+    - new_image
+    - new_user
+    type: object
   models.User:
     properties:
       created_at:
@@ -531,19 +543,19 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update user information
+      description: Update user information with provided user data.
       parameters:
-      - description: User data
+      - description: User data for update
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.UpdateUser'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: User updated successfully
           schema:
             $ref: '#/definitions/models.User'
         "400":
@@ -569,7 +581,7 @@ paths:
       - Users
   /users/{id}:
     get:
-      description: Retrieve demographic information for a specific user
+      description: Retrieve demographic information for a specific user by ID.
       parameters:
       - description: User ID
         in: path
@@ -580,7 +592,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: User demographic information
           schema:
             $ref: '#/definitions/models.User'
         "404":
@@ -596,9 +608,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update user's email address
+      description: Update user's email address with a new email.
       parameters:
-      - description: New Email
+      - description: New Email for update
         in: body
         name: email
         required: true
@@ -670,48 +682,13 @@ paths:
       summary: Send Email Verification
       tags:
       - Users
-  /users/email/verify:
-    get:
-      consumes:
-      - application/json
-      description: Verify the user's email using a token
-      parameters:
-      - description: Email Verification Token
-        in: query
-        name: token
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Email verified successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid token
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Failed to verify email
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Verify User Email
-      tags:
-      - Users
   /users/login:
     post:
       consumes:
       - application/json
-      description: Authenticate a user and return a JWT token
+      description: Authenticate a user and return a JWT token.
       parameters:
-      - description: Login credentials
+      - description: Login credentials for authentication
         in: body
         name: login
         required: true
@@ -721,7 +698,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: token
+          description: JWT token
           schema:
             additionalProperties: true
             type: object
@@ -744,9 +721,14 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update user's password
+      description: Update user's password with a new password using a reset token.
       parameters:
-      - description: New Password
+      - description: JWT token for user authentication
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: New Password for update
         in: body
         name: password
         required: true
@@ -768,7 +750,7 @@ paths:
               type: string
             type: object
         "401":
-          description: User ID not found
+          description: Invalid or expired token
           schema:
             additionalProperties:
               type: string
@@ -786,9 +768,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Sends a password reset email to the user
+      description: Sends a password reset email to the user with provided email.
       parameters:
-      - description: User Email
+      - description: User Email for password reset
         in: body
         name: email
         required: true
@@ -822,9 +804,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Register a new user
+      description: Register a new user with provided user data.
       parameters:
-      - description: User data
+      - description: User data for registration
         in: body
         name: user
         required: true
@@ -834,7 +816,7 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: User created successfully
           schema:
             $ref: '#/definitions/models.User'
         "400":
@@ -850,6 +832,41 @@ paths:
               type: string
             type: object
       summary: User Registration
+      tags:
+      - Users
+  /users/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify the user's email address using a verification token.
+      parameters:
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to verify email
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify User Email
       tags:
       - Users
 security:

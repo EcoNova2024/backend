@@ -64,3 +64,22 @@ func (repo *UserRepository) UpdateEmail(userID, newEmail string) error {
 func (repo *UserRepository) UpdatePassword(userID, hashedPassword string) error {
 	return repo.db.Model(&models.User{}).Where("id = ?", userID).Update("password", hashedPassword).Error
 }
+
+// VerifyEmail verifies a user's email address
+func (repo *UserRepository) VerifyEmail(userID string) error {
+	// Find the user by ID
+	var user models.User
+	if err := repo.db.First(&user, "id = ?", userID).Error; err != nil {
+		return errors.New("user not found")
+	}
+
+	// Update the verified status
+	user.Verified = true
+
+	// Save changes to the database
+	if err := repo.db.Save(&user).Error; err != nil {
+		return errors.New("failed to update user")
+	}
+
+	return nil
+}

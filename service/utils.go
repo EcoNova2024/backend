@@ -122,3 +122,16 @@ func SendPasswordResetEmail(email, resetLink string) error {
 	body := fmt.Sprintf("Click the following link to reset your password: %s", resetLink)
 	return SendEmail(email, subject, body)
 }
+func GeneratePasswordResetToken(userID string) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET") // Fetch secret from environment variable
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(time.Hour * 1).Unix(), // Token valid for 1 hour
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte(jwtSecret)) // Use the secret from environment
+	if err != nil {
+		return "", err
+	}
+	return signedToken, nil
+}
