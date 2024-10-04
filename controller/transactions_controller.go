@@ -13,27 +13,27 @@ import (
 // TransactionController handles HTTP requests related to transactions
 type TransactionController struct {
 	transactionService *service.TransactionService
+	productService     *service.ProductService
 }
 
 // NewTransactionController creates a new TransactionController instance
-func NewTransactionController(transactionService *service.TransactionService) *TransactionController {
-	return &TransactionController{transactionService: transactionService}
+func NewTransactionController(transactionService *service.TransactionService, productService *service.ProductService) *TransactionController {
+	return &TransactionController{transactionService: transactionService, productService: productService}
 }
 
-// addTransactionToItem adds a transaction to an item
+// AddTransactionToItem adds a transaction to an item
 // @Summary      Add transaction to item
 // @Description  Adds a transaction (submitted, revitalized, or sold) to an item
 // @Tags         Transactions
 // @Accept       json
 // @Produce      json
 // @Param        item_id      path      string  true   "Item ID"
-// @Param        user_id      path      string  true   "User ID"
-// @Param        body         body      models.Transaction  true   "Transaction details"
+// @Param        body         body      models.AddTransactionRequest  true   "Transaction details"
 // @Success      201          {object}  models.Transaction
-// @Router       /transactions/item/{item_id}/user/{user_id} [post]
+// @Router       /transactions/{item_id} [post]
 func (controller *TransactionController) AddTransactionToItem(c *gin.Context) {
-	var transaction models.Transaction
-	if err := c.ShouldBindJSON(&transaction); err != nil {
+	var transactionReq models.AddTransactionRequest
+	if err := c.ShouldBindJSON(&transactionReq); err != nil {
 		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
@@ -47,49 +47,47 @@ func (controller *TransactionController) AddTransactionToItem(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(c.Param("user_id"))
-	if err != nil {
-		log.Printf("Invalid user UUID: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user UUID format"})
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
 		return
 	}
 
-	transaction.ItemID = itemID
-	transaction.UserID = userID
+	// Convert userID to UUID
+	uid, err := uuid.Parse(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
-	// Add transaction
-	if err := controller.transactionService.AddTransaction(&transaction); err != nil {
+	// Retrieve product details by ID
+	product, err := controller.productService.GetByID(itemID)
+	if err != nil {
+		log.Printf("Error retrieving product: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve product", "details": err.Error()})
+		return
+	}
+	if product == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Prepare transaction data
+	transaction := models.TransactionRequest{
+		ItemID:      itemID,
+		UserID:      uid,
+		Description: transactionReq.Description, // Use the Description from the request
+		Action:      transactionReq.Action,      // Use the Action from the request (TransactionAction type)
+		ImageURL:    transactionReq.ImageURL,    // Use the ImageURL from the request
+	}
+
+	// Add the transaction
+	t, err := controller.transactionService.AddTransaction(&transaction)
+	if err != nil {
 		log.Printf("Error adding transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add transaction", "details": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Transaction added successfully", "transaction": transaction})
-}
-
-// hideTransaction hides a transaction based on its ID
-// @Summary      Hide transaction
-// @Description  Hides a transaction by updating the hidden flag to true
-// @Tags         Transactions
-// @Accept       json
-// @Produce      json
-// @Param        id      path   string  true   "Transaction ID"
-// @Router       /transactions/{id}/hide [patch]
-func (controller *TransactionController) HideTransaction(c *gin.Context) {
-	idParam := c.Param("id")
-	transactionID, err := uuid.Parse(idParam)
-	if err != nil {
-		log.Printf("Invalid transaction UUID: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transaction UUID format"})
-		return
-	}
-
-	// Hide transaction
-	if err := controller.transactionService.HideTransaction(transactionID); err != nil {
-		log.Printf("Error hiding transaction: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hide transaction", "details": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Transaction hidden successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Transaction added successfully", "transaction": t})
 }

@@ -22,15 +22,18 @@ func (r *TransactionRepository) Create(transaction *models.Transaction) error {
 	return r.db.Create(transaction).Error
 }
 
-// HideTransaction updates a transaction to set its hidden status
-func (r *TransactionRepository) HideTransaction(id uuid.UUID) error {
-	return r.db.Model(&models.Transaction{}).Where("id = ?", id).Update("hidden", true).Error
-}
-
-// GetByUserID retrieves transactions for a specific user
-func (r *TransactionRepository) GetByUserID(userID uuid.UUID) ([]models.Transaction, error) {
+// GetByItemID retrieves transactions for a specific user
+func (r *TransactionRepository) GetByProductID(itemID uuid.UUID) ([]models.Transaction, error) {
 	var transactions []models.Transaction
-	if err := r.db.Where("user_id = ?", userID).Find(&transactions).Error; err != nil {
+	if err := r.db.Where("item_id = ?", itemID).Find(&transactions).Error; err != nil {
+		return nil, err
+	}
+	return transactions, nil
+}
+func (r *TransactionRepository) GetByImageURLs(imageURLs []string) ([]models.Transaction, error) {
+	var transactions []models.Transaction
+	err := r.db.Where("image_url IN ?", imageURLs).Find(&transactions).Error
+	if err != nil {
 		return nil, err
 	}
 	return transactions, nil

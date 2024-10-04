@@ -29,12 +29,12 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	transactionService := service.NewTransactionService(transactionRepo)
 
 	// Create controllers
-	productController := controller.NewProductController(productService, transactionService)
+	productController := controller.NewProductController(productService, transactionService, userService)
 	ratingController := controller.NewRatingController(ratingService)
 	userController := controller.NewUserController(userService)
 	commentsController := controller.NewCommentsController(commentsService)
 	homeController := controller.NewHomeController()
-	transactionController := controller.NewTransactionController(transactionService)
+	transactionController := controller.NewTransactionController(transactionService, productService)
 
 	// Define routes
 	router.GET("/", homeController.Index) // Home route
@@ -56,8 +56,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Product routes
 	products := router.Group("/products")
 	{
-		products.POST("/", productController.Create)                            // Create a new product
-		products.PUT("/", middleware.JWTAuth(), productController.Update)       // Update an existing product
+		products.POST("/", middleware.JWTAuth(), productController.Create)      // Create a new product
 		products.DELETE("/:id", middleware.JWTAuth(), productController.Delete) // Delete a product by ID
 		products.GET("/:id", productController.GetOne)                          // Get a product by ID
 		products.GET("/user", productController.GetProductsByUserID)            // Get products by user ID (from JWT)
@@ -86,7 +85,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Transaction routes
 	transactions := router.Group("/transactions")
 	{
-		transactions.POST("/item/:item_id/user/:user_id", transactionController.AddTransactionToItem) // Add transaction to item
-		transactions.PATCH("/:id/hide", middleware.JWTAuth(), transactionController.HideTransaction)  // Hide transaction
+		transactions.POST("/:item_id/", middleware.JWTAuth(), transactionController.AddTransactionToItem) // Add transaction to item
 	}
 }

@@ -152,38 +152,6 @@ const docTemplate = `{
             }
         },
         "/products": {
-            "put": {
-                "description": "Update an existing product with the provided data",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Products"
-                ],
-                "summary": "Update an existing product",
-                "parameters": [
-                    {
-                        "description": "Updated product data",
-                        "name": "product",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Product"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ProductResponse"
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "Create a new product with the given details",
                 "consumes": [
@@ -203,7 +171,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Product"
+                            "$ref": "#/definitions/models.ProductRequest"
                         }
                     }
                 ],
@@ -303,6 +271,77 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.Product"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{id}/status": {
+            "put": {
+                "description": "Change the status of a product using its ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Change Product Status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New Status for the product",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -450,7 +489,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/transactions/item/{item_id}/user/{user_id}": {
+        "/transactions/{item_id}": {
             "post": {
                 "description": "Adds a transaction (submitted, revitalized, or sold) to an item",
                 "consumes": [
@@ -472,19 +511,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Transaction details",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Transaction"
+                            "$ref": "#/definitions/models.AddTransactionRequest"
                         }
                     }
                 ],
@@ -496,31 +528,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/transactions/{id}/hide": {
-            "patch": {
-                "description": "Hides a transaction by updating the hidden flag to true",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transactions"
-                ],
-                "summary": "Hide transaction",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Transaction ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
             }
         },
         "/users": {
@@ -1027,6 +1034,27 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.AddTransactionRequest": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "Action type of the transaction",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TransactionAction"
+                        }
+                    ]
+                },
+                "description": {
+                    "description": "Description of the transaction",
+                    "type": "string"
+                },
+                "image_url": {
+                    "description": "URL of the transaction image",
+                    "type": "string"
+                }
+            }
+        },
         "models.Comment": {
             "type": "object",
             "properties": {
@@ -1086,27 +1114,84 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
+                    "description": "Category of the product",
                     "type": "string"
                 },
                 "created_at": {
+                    "description": "Timestamp when the product was created",
                     "type": "string"
                 },
                 "description": {
+                    "description": "Description of the product",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Unique identifier for the product",
                     "type": "string"
                 },
                 "name": {
+                    "description": "Name of the product",
                     "type": "string"
                 },
                 "price": {
+                    "description": "Price of the product",
                     "type": "number"
                 },
+                "status": {
+                    "description": "Status of the product (uses varchar instead of enum for MySQL)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ProductStatus"
+                        }
+                    ]
+                },
                 "sub_category": {
+                    "description": "Subcategory of the product",
                     "type": "string"
                 },
                 "user_id": {
+                    "description": "ID of the user who owns the product",
+                    "type": "string"
+                }
+            }
+        },
+        "models.ProductRequest": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "Category of the product",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Description of the product",
+                    "type": "string"
+                },
+                "image_url": {
+                    "description": "URL of the transaction image",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the product",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "Price of the product",
+                    "type": "number"
+                },
+                "status": {
+                    "description": "Status of the product (optional during request)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ProductStatus"
+                        }
+                    ]
+                },
+                "sub_category": {
+                    "description": "Subcategory of the product",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "ID of the user creating the product",
                     "type": "string"
                 }
             }
@@ -1115,30 +1200,62 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
+                    "description": "Category of the product",
                     "type": "string"
                 },
                 "created_at": {
+                    "description": "Timestamp when the product was created",
                     "type": "string"
                 },
                 "description": {
+                    "description": "Product description",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Product ID",
                     "type": "string"
                 },
                 "name": {
+                    "description": "Product name",
                     "type": "string"
                 },
                 "price": {
+                    "description": "Product price",
                     "type": "number"
                 },
                 "sub_category": {
+                    "description": "Subcategory of the product",
                     "type": "string"
                 },
+                "transactions": {
+                    "description": "List of transactions related to the product",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Transaction"
+                    }
+                },
                 "user": {
-                    "$ref": "#/definitions/models.User"
+                    "description": "Associated user (owner of the product)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    ]
                 }
             }
+        },
+        "models.ProductStatus": {
+            "type": "string",
+            "enum": [
+                "available",
+                "restored",
+                "sold"
+            ],
+            "x-enum-varnames": [
+                "StatusAvailable",
+                "StatusRestored",
+                "StatusSold"
+            ]
         },
         "models.Rating": {
             "type": "object",
@@ -1224,9 +1341,6 @@ const docTemplate = `{
                     "description": "Description of the transaction",
                     "type": "string"
                 },
-                "hidden": {
-                    "type": "boolean"
-                },
                 "id": {
                     "description": "Primary key, unique identifier for each transaction",
                     "type": "string"
@@ -1236,7 +1350,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "item_id": {
-                    "description": "Reference to the item involved in the transaction",
+                    "description": "Reference to the product involved in the transaction",
                     "type": "string"
                 },
                 "user_id": {

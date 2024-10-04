@@ -19,16 +19,20 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 }
 
 // Create a new product
-func (s *ProductService) Create(product *models.ProductRequest) error {
-	var p *models.Product
-	p.ID = uuid.New()
-	p.Name = product.Name
-	p.Description = product.Description
-	p.Price = product.Price
-	p.Category = product.Category
-	p.SubCategory = product.SubCategory
-	p.CreatedAt = time.Now().UTC()
-	return s.productRepo.Create(p)
+func (s *ProductService) Create(product *models.ProductRequest, userID uuid.UUID) (*models.Product, error) {
+	p := &models.Product{ // Correctly initialize the Product struct
+		ID:          uuid.New(),
+		Name:        product.Name,
+		Description: product.Description,
+		Price:       product.Price,
+		Category:    product.Category,
+		Status:      models.StatusAvailable,
+		SubCategory: product.SubCategory,
+		CreatedAt:   time.Now().UTC(),
+		UserID:      userID,
+	}
+
+	return p, s.productRepo.Create(p)
 }
 
 // Update an existing product
@@ -78,4 +82,15 @@ func (s *ProductService) GetProductsByUserID(userID uuid.UUID) ([]models.Product
 
 	// Business logic could be added here, e.g., filtering hidden products.
 	return products, nil
+}
+
+// UpdateStatus updates the status of a product.
+func (s *ProductService) UpdateStatus(productID uuid.UUID, status models.ProductStatus) error {
+	product, err := s.productRepo.GetByID(productID)
+	if err != nil {
+		return ErrProductNotFound
+	}
+
+	product.Status = status
+	return s.productRepo.Update(product)
 }

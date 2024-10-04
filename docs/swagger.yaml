@@ -1,4 +1,17 @@
 definitions:
+  models.AddTransactionRequest:
+    properties:
+      action:
+        allOf:
+        - $ref: '#/definitions/models.TransactionAction'
+        description: Action type of the transaction
+      description:
+        description: Description of the transaction
+        type: string
+      image_url:
+        description: URL of the transaction image
+        type: string
+    type: object
   models.Comment:
     properties:
       content:
@@ -38,41 +51,105 @@ definitions:
   models.Product:
     properties:
       category:
+        description: Category of the product
         type: string
       created_at:
+        description: Timestamp when the product was created
         type: string
       description:
+        description: Description of the product
         type: string
       id:
+        description: Unique identifier for the product
         type: string
       name:
+        description: Name of the product
         type: string
       price:
+        description: Price of the product
         type: number
+      status:
+        allOf:
+        - $ref: '#/definitions/models.ProductStatus'
+        description: Status of the product (uses varchar instead of enum for MySQL)
       sub_category:
+        description: Subcategory of the product
         type: string
       user_id:
+        description: ID of the user who owns the product
+        type: string
+    type: object
+  models.ProductRequest:
+    properties:
+      category:
+        description: Category of the product
+        type: string
+      description:
+        description: Description of the product
+        type: string
+      image_url:
+        description: URL of the transaction image
+        type: string
+      name:
+        description: Name of the product
+        type: string
+      price:
+        description: Price of the product
+        type: number
+      status:
+        allOf:
+        - $ref: '#/definitions/models.ProductStatus'
+        description: Status of the product (optional during request)
+      sub_category:
+        description: Subcategory of the product
+        type: string
+      user_id:
+        description: ID of the user creating the product
         type: string
     type: object
   models.ProductResponse:
     properties:
       category:
+        description: Category of the product
         type: string
       created_at:
+        description: Timestamp when the product was created
         type: string
       description:
+        description: Product description
         type: string
       id:
+        description: Product ID
         type: string
       name:
+        description: Product name
         type: string
       price:
+        description: Product price
         type: number
       sub_category:
+        description: Subcategory of the product
         type: string
+      transactions:
+        description: List of transactions related to the product
+        items:
+          $ref: '#/definitions/models.Transaction'
+        type: array
       user:
-        $ref: '#/definitions/models.User'
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: Associated user (owner of the product)
     type: object
+  models.ProductStatus:
+    enum:
+    - available
+    - restored
+    - sold
+    type: string
+    x-enum-varnames:
+    - StatusAvailable
+    - StatusRestored
+    - StatusSold
   models.Rating:
     properties:
       created_at:
@@ -128,8 +205,6 @@ definitions:
       description:
         description: Description of the transaction
         type: string
-      hidden:
-        type: boolean
       id:
         description: Primary key, unique identifier for each transaction
         type: string
@@ -137,7 +212,7 @@ definitions:
         description: URL of the transaction image
         type: string
       item_id:
-        description: Reference to the item involved in the transaction
+        description: Reference to the product involved in the transaction
         type: string
       user_id:
         description: Reference to the user performing the transaction
@@ -303,7 +378,7 @@ paths:
         name: product
         required: true
         schema:
-          $ref: '#/definitions/models.Product'
+          $ref: '#/definitions/models.ProductRequest'
       produces:
       - application/json
       responses:
@@ -314,25 +389,51 @@ paths:
       summary: Create a new product
       tags:
       - Products
+  /products/{id}/status:
     put:
       consumes:
       - application/json
-      description: Update an existing product with the provided data
+      description: Change the status of a product using its ID.
       parameters:
-      - description: Updated product data
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Status for the product
         in: body
-        name: product
+        name: status
         required: true
         schema:
-          $ref: '#/definitions/models.Product'
+          type: string
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Status updated successfully
           schema:
-            $ref: '#/definitions/models.ProductResponse'
-      summary: Update an existing product
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Change Product Status
       tags:
       - Products
   /products/collaborative:
@@ -490,24 +591,7 @@ paths:
       summary: Get rated products by user ID
       tags:
       - Ratings
-  /transactions/{id}/hide:
-    patch:
-      consumes:
-      - application/json
-      description: Hides a transaction by updating the hidden flag to true
-      parameters:
-      - description: Transaction ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Hide transaction
-      tags:
-      - Transactions
-  /transactions/item/{item_id}/user/{user_id}:
+  /transactions/{item_id}:
     post:
       consumes:
       - application/json
@@ -518,17 +602,12 @@ paths:
         name: item_id
         required: true
         type: string
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
       - description: Transaction details
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Transaction'
+          $ref: '#/definitions/models.AddTransactionRequest'
       produces:
       - application/json
       responses:
