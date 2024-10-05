@@ -32,6 +32,14 @@ func (service *RatingService) Delete(id uuid.UUID) error {
 func (service *RatingService) GetRatedProductsByUserId(userID uuid.UUID) ([]models.Rating, error) {
 	return service.ratingRepo.GetRatedProductsByUserId(userID)
 }
+func (service *RatingService) GetPuanByUserIdItemId(userID uuid.UUID, itemId uuid.UUID) (int, error) {
+	puan, err := service.ratingRepo.GetPuanByUserIdItemId(userID, itemId)
+	if err != nil {
+		return 0, nil
+	}
+	return puan, nil
+
+}
 
 // GetAverageRatingByProductId retrieves the average rating and the count of ratings for a product
 func (s *RatingService) GetAverageRatingByProductId(productID uuid.UUID) (float64, int, error) {

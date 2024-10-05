@@ -47,7 +47,7 @@ func (r *RatingRepository) GetAverageRatingByProductId(productID uuid.UUID) (flo
 	// Use GORM to calculate the average rating and count for the specified product
 	err := r.db.Model(&models.Rating{}).
 		Where("product_id = ?", productID).
-		Select("AVG(rating) as average, COUNT(*) as count").
+		Select("AVG(score) as average, COUNT(*) as count").
 		Scan(&result).Error
 
 	if err != nil {
@@ -55,4 +55,19 @@ func (r *RatingRepository) GetAverageRatingByProductId(productID uuid.UUID) (flo
 	}
 
 	return result.Average, result.Count, nil
+}
+
+// GetPuanByUserIdItemId retrieves the rating given by a user for a specific product
+func (r *RatingRepository) GetPuanByUserIdItemId(userID uuid.UUID, productID uuid.UUID) (int, error) {
+	var rating models.Rating
+
+	// Find the rating by user ID and product ID
+	if err := r.db.Where("user_id = ? AND product_id = ?", userID, productID).First(&rating).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return 0, nil // Return 0 if no rating exists for this user and product
+		}
+		return 0, err // Return the error if something else went wrong
+	}
+
+	return int(rating.Score), nil
 }

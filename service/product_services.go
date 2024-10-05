@@ -54,14 +54,11 @@ func (s *ProductService) GetByID(id uuid.UUID) (*models.Product, error) {
 func (s *ProductService) GetProductsByIDs(ids []uuid.UUID) ([]models.Product, error) {
 	return s.productRepo.GetProductsByIDs(ids)
 }
-func (s *ProductService) FetchCollaborativeRecommendations(userID uuid.UUID, page int) ([]models.Product, error) {
-	// Here you would implement your collaborative filtering logic.
-	// For example, you might fetch user purchase history, similar users, etc.
+func (s *ProductService) FetchCollaborativeRecommendations(userID uuid.UUID) ([]models.Product, error) {
 
-	// Placeholder logic:
-	recommendedProductIDs := []uuid.UUID{} // This should be populated with actual logic
+	recommendedProductIDs := []uuid.UUID{}
 
-	products, err := s.productRepo.GetProductsByIDs(recommendedProductIDs) // Assuming you have a GetByIDs method
+	products, err := s.productRepo.GetProductsByIDs(recommendedProductIDs)
 	if err != nil {
 		return nil, err
 	}

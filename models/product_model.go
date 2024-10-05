@@ -29,15 +29,18 @@ type Product struct {
 
 // ProductResponse represents the structure used to return a product with its associated transactions and user information.
 type ProductResponse struct {
-	ID           uuid.UUID     `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primary_key"` // Product ID
-	User         User          `gorm:"foreignKey:UserID" json:"user"`                              // Associated user (owner of the product)
-	Transactions []Transaction `gorm:"foreignKey:ItemID" json:"transactions"`                      // List of transactions related to the product
-	Name         string        `json:"name"`                                                       // Product name
-	Description  string        `json:"description"`                                                // Product description
-	Price        float64       `json:"price"`                                                      // Product price
-	SubCategory  string        `json:"sub_category"`                                               // Subcategory of the product
-	Category     string        `json:"category"`                                                   // Category of the product
-	CreatedAt    time.Time     `json:"created_at" gorm:"autoCreateTime"`                           // Timestamp when the product was created
+	ID            uuid.UUID     `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primary_key"` // Product ID
+	User          User          `gorm:"foreignKey:UserID" json:"user"`                              // Associated user (owner of the product)
+	Transactions  []Transaction `gorm:"foreignKey:ItemID" json:"transactions"`                      // List of transactions related to the product
+	Name          string        `json:"name"`                                                       // Product name
+	Description   string        `json:"description"`                                                // Product description
+	Price         float64       `json:"price"`                                                      // Product price
+	SubCategory   string        `json:"sub_category"`                                               // Subcategory of the product
+	Rating        int           `json:"rating"`                                                     // Product rating
+	RatingCount   int           `json:"rating_count"`                                               // Product rating count
+	RatingAverage float64       `json:"rating_average"`                                             // Product rating average
+	Category      string        `json:"category"`                                                   // Category of the product
+	CreatedAt     time.Time     `json:"created_at" gorm:"autoCreateTime"`                           // Timestamp when the product was created
 }
 
 // ProductRequest is used when creating a new product, without including transactions.

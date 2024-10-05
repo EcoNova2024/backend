@@ -29,7 +29,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	transactionService := service.NewTransactionService(transactionRepo)
 
 	// Create controllers
-	productController := controller.NewProductController(productService, transactionService, userService)
+	productController := controller.NewProductController(productService, transactionService, userService, ratingService)
 	ratingController := controller.NewRatingController(ratingService)
 	userController := controller.NewUserController(userService)
 	commentsController := controller.NewCommentsController(commentsService)
@@ -56,12 +56,11 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Product routes
 	products := router.Group("/products")
 	{
-		products.POST("/", middleware.JWTAuth(), productController.Create)      // Create a new product
-		products.DELETE("/:id", middleware.JWTAuth(), productController.Delete) // Delete a product by ID
-		products.GET("/:id", productController.GetOne)                          // Get a product by ID
-		products.GET("/user", productController.GetProductsByUserID)            // Get products by user ID (from JWT)
-		products.GET("/content-based", productController.GetContentBased)       // Get content-based recommendations
-		products.GET("/collaborative", productController.GetCollaborative)      // Get collaborative-based recommendations
+		products.POST("/", middleware.JWTAuth(), productController.Create) // Create a new product
+		products.GET("/:id", productController.GetOne)                     // Get a product by ID
+		products.GET("/user", productController.GetProductsByUserID)       // Get products by user ID (from JWT)
+		products.GET("/content-based", productController.GetContentBased)  // Get content-based recommendations
+		products.GET("/collaborative", productController.GetCollaborative) // Get collaborative-based recommendations
 	}
 
 	// Rating routes
