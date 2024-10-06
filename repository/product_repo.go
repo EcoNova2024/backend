@@ -68,3 +68,12 @@ func (r *ProductRepository) GetProductsByUserID(userID uuid.UUID) ([]models.Prod
 	}
 	return products, nil
 }
+
+// GetByStatus retrieves 10 random products by their status
+func (r *ProductRepository) GetByStatus(status string) ([]models.Product, error) {
+	var products []models.Product
+	if err := r.db.Where("status = ?", status).Order("RAND()").Limit(10).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}

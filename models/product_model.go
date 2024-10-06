@@ -38,9 +38,10 @@ type ProductResponse struct {
 	SubCategory   string        `json:"sub_category"`                                               // Subcategory of the product
 	Rating        int           `json:"rating"`                                                     // Product rating
 	RatingCount   int           `json:"rating_count"`                                               // Product rating count
-	RatingAverage float64       `json:"rating_average"`                                             // Product rating average
-	Category      string        `json:"category"`                                                   // Category of the product
-	CreatedAt     time.Time     `json:"created_at" gorm:"autoCreateTime"`                           // Timestamp when the product was created
+	Status        ProductStatus `json:"status,omitempty"`
+	RatingAverage float64       `json:"rating_average"`                   // Product rating average
+	Category      string        `json:"category"`                         // Category of the product
+	CreatedAt     time.Time     `json:"created_at" gorm:"autoCreateTime"` // Timestamp when the product was created
 }
 
 // ProductRequest is used when creating a new product, without including transactions.

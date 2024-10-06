@@ -154,3 +154,9 @@ func (s *ProductService) UpdateStatus(productID uuid.UUID, status models.Product
 	product.Status = status
 	return s.productRepo.Update(product)
 }
+
+// GetRestoredProducts retrieves products with the status "restored"
+func (s *ProductService) GetRestoredProducts() ([]models.Product, error) {
+	// Assuming the repository has a method to get products by status
+	return s.productRepo.GetByStatus("restored")
+}

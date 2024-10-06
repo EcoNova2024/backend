@@ -15,142 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/comments": {
-            "post": {
-                "description": "Create a new comment for a product by a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Comments"
-                ],
-                "summary": "Create a Comment",
-                "parameters": [
-                    {
-                        "description": "Comment data",
-                        "name": "comment",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Comment"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.CommentResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/comments/product/{product_id}": {
-            "get": {
-                "description": "Retrieve all comments made on a specific product",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Comments"
-                ],
-                "summary": "Get Comments by Product ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Product ID",
-                        "name": "product_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.CommentResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/comments/user/{user_id}": {
-            "get": {
-                "description": "Retrieve all comments made by a specific user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Comments"
-                ],
-                "summary": "Get Comments by User ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Comment"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/comments/{comment_id}/hide": {
-            "post": {
-                "description": "Hide a specific comment by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Comments"
-                ],
-                "summary": "Hide a Comment",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Comment ID",
-                        "name": "comment_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.CommentResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/products": {
             "get": {
                 "description": "Get a product by its unique ID",
@@ -253,6 +117,23 @@ const docTemplate = `{
             "get": {
                 "description": "Retrieve random products for unauthenticated users",
                 "summary": "Get random products",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ProductResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/restored": {
+            "get": {
+                "description": "Retrieve products with the status \"restored\"",
+                "summary": "Get restored products",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -992,46 +873,6 @@ const docTemplate = `{
                 },
                 "image_url": {
                     "description": "URL of the transaction image",
-                    "type": "string"
-                }
-            }
-        },
-        "models.Comment": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "hidden": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "productID": {
-                    "type": "string"
-                },
-                "userID": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.CommentResponse": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "is_owner": {
-                    "type": "boolean"
-                },
-                "product_id": {
-                    "type": "string"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }

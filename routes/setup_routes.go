@@ -54,11 +54,12 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	products := router.Group("/products")
 	{
 		products.POST("/", middleware.JWTAuth(), productController.Create)                       // Create a new product
-		products.GET("/:id", productController.GetOne)                                           // Get a product by ID
+		products.GET("/", productController.GetOne)                                              // Get a product by ID
 		products.GET("/user", productController.GetProductsByUserID)                             // Get products by user ID (from JWT)
 		products.GET("/content-based", productController.GetContentBased)                        // Get content-based recommendations
 		products.GET("/collaborative", middleware.JWTAuth(), productController.GetCollaborative) // Get collaborative-based recommendations
-		products.GET("random", productController.GetRandomProducts)                              // Get random recommendations
+		products.GET("/restored", productController.GetRestoredProducts)                         // Get restored products
+		products.GET("/random", productController.GetRandomProducts)                             // Get random products
 	}
 
 	// Rating routes

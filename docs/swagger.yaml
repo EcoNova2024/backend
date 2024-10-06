@@ -19,32 +19,6 @@ definitions:
         description: URL of the transaction image
         type: string
     type: object
-  models.Comment:
-    properties:
-      content:
-        type: string
-      hidden:
-        type: boolean
-      id:
-        type: string
-      productID:
-        type: string
-      userID:
-        type: string
-    type: object
-  models.CommentResponse:
-    properties:
-      content:
-        type: string
-      id:
-        type: string
-      is_owner:
-        type: boolean
-      product_id:
-        type: string
-      user_id:
-        type: string
-    type: object
   models.Login:
     properties:
       email:
@@ -263,95 +237,6 @@ info:
   title: Econova API
   version: "1.0"
 paths:
-  /comments:
-    post:
-      consumes:
-      - application/json
-      description: Create a new comment for a product by a user
-      parameters:
-      - description: Comment data
-        in: body
-        name: comment
-        required: true
-        schema:
-          $ref: '#/definitions/models.Comment'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.CommentResponse'
-      summary: Create a Comment
-      tags:
-      - Comments
-  /comments/{comment_id}/hide:
-    post:
-      consumes:
-      - application/json
-      description: Hide a specific comment by ID
-      parameters:
-      - description: Comment ID
-        in: path
-        name: comment_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.CommentResponse'
-      summary: Hide a Comment
-      tags:
-      - Comments
-  /comments/product/{product_id}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve all comments made on a specific product
-      parameters:
-      - description: Product ID
-        in: path
-        name: product_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.CommentResponse'
-            type: array
-      summary: Get Comments by Product ID
-      tags:
-      - Comments
-  /comments/user/{user_id}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve all comments made by a specific user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.Comment'
-            type: array
-      summary: Get Comments by User ID
-      tags:
-      - Comments
   /products:
     get:
       description: Get a product by its unique ID
@@ -428,6 +313,17 @@ paths:
               $ref: '#/definitions/models.ProductResponse'
             type: array
       summary: Get random products
+  /products/restored:
+    get:
+      description: Retrieve products with the status "restored"
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ProductResponse'
+            type: array
+      summary: Get restored products
   /products/user:
     get:
       description: Get all products for a specific user

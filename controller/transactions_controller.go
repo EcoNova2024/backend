@@ -89,5 +89,16 @@ func (controller *TransactionController) AddTransactionToItem(c *gin.Context) {
 		return
 	}
 
+	// If the action is "revitalized", update the product status to "restored"
+	if transactionReq.Action == "revitalized" {
+		product.Status = "restored"                     // Update the status field
+		err = controller.productService.Update(product) // Save the updated product
+		if err != nil {
+			log.Printf("Error updating product status: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product status", "details": err.Error()})
+			return
+		}
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Transaction added successfully", "transaction": t})
 }

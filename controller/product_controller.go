@@ -331,7 +331,36 @@ func (controller *ProductController) populateAdditionalProductData(product *mode
 		RatingAverage: averageRating,
 		Rating:        UserRating,
 		CreatedAt:     product.CreatedAt,
+		Status:        product.Status,
 		Transactions:  transactions,
 	}
 	return productRes, nil
+}
+
+// GetRestoredProducts retrieves products with the status "restored"
+// @Summary Get restored products
+// @Description Retrieve products with the status "restored"
+// @Success 200 {array} models.ProductResponse
+// @Router /products/restored [get]
+func (controller *ProductController) GetRestoredProducts(c *gin.Context) {
+	// Fetch restored products from the product service
+	products, err := controller.productService.GetRestoredProducts()
+	if err != nil {
+		log.Printf("GetRestoredProducts: failed to fetch restored products: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve restored products"})
+		return
+	}
+
+	var productResponses []models.ProductResponse
+	for _, product := range products {
+		productResponse, err := controller.populateAdditionalProductData(&product)
+		if err != nil {
+			log.Printf("GetRestoredProducts: failed to fetch additional data for product %s: %v", product.ID.String(), err)
+			continue // Skip to the next product if there's an error
+		}
+
+		productResponses = append(productResponses, productResponse)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }
