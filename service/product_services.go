@@ -3,9 +3,14 @@ package service
 import (
 	"backend/models"
 	"backend/repository"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 // ProductService handles business logic for products
@@ -54,19 +59,77 @@ func (s *ProductService) GetByID(id uuid.UUID) (*models.Product, error) {
 func (s *ProductService) GetProductsByIDs(ids []uuid.UUID) ([]models.Product, error) {
 	return s.productRepo.GetProductsByIDs(ids)
 }
-func (s *ProductService) FetchCollaborativeRecommendations(userID uuid.UUID) ([]models.Product, error) {
+func (s *ProductService) FetchCollaborativeRecommendations(userID string) ([]models.Product, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load .env file: %v", err)
+	}
 
-	recommendedProductIDs := []uuid.UUID{}
+	// Get Flask server URL from environment variable
+	url := fmt.Sprintf("%s?user_id=%s", os.Getenv("FLASK_SERVER_URL2"), userID)
+	//url := fmt.Sprintf("http://localhost:5001/recommendations?user_id=%s", userID)
 
+	// Make the HTTP GET request to fetch recommendations
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close() // Ensure the response body is closed
+
+	// Check if the response status is OK
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error fetching recommendations: status %d", response.StatusCode)
+	}
+
+	// Parse the JSON response
+	var recommendations struct {
+		UserID          string             `json:"user_id"`
+		Recommendations map[string]float64 `json:"recommendations"`
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(&recommendations); err != nil {
+		return nil, err
+	}
+
+	// Extract product IDs from recommendations
+	recommendedProductIDs := make([]uuid.UUID, 0, len(recommendations.Recommendations))
+	for productIDStr := range recommendations.Recommendations {
+		productID, err := uuid.Parse(productIDStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid product ID: %s", productIDStr)
+		}
+		recommendedProductIDs = append(recommendedProductIDs, productID)
+	}
+
+	// If the number of recommended product IDs is less than the threshold, fetch random products
+	if len(recommendedProductIDs) < 10 {
+		additionalProducts, err := s.productRepo.GetRandomProducts()
+		if err != nil {
+			return nil, err
+		}
+
+		// Combine the recommended product IDs with the random products
+		for _, product := range additionalProducts {
+			recommendedProductIDs = append(recommendedProductIDs, product.ID)
+		}
+	}
+
+	// Retrieve product details based on the recommended product IDs
 	products, err := s.productRepo.GetProductsByIDs(recommendedProductIDs)
 	if err != nil {
 		return nil, err
 	}
+
+	// Limit the number of products to a maximum of 10
+	if len(products) > 10 {
+		products = products[:10]
+	}
+
 	return products, nil
 }
 
 // GetRandomProducts retrieves random products for a user
-func (s *ProductService) GetRandomProducts(userID uuid.UUID) ([]models.Product, error) {
+func (s *ProductService) GetRandomProducts() ([]models.Product, error) {
 	return s.productRepo.GetRandomProducts()
 }
 

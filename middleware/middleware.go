@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware checks for a valid JWT and extracts the user ID from it.
+// JWTAuth checks for a valid JWT and extracts the user ID from it.
 func JWTAuth() gin.HandlerFunc {
 	secretKey := os.Getenv("JWT_SECRET") // Retrieve the secret key from environment variables
 	if secretKey == "" {
@@ -36,6 +37,7 @@ func JWTAuth() gin.HandlerFunc {
 
 		// Parse and validate the JWT
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Ensure the signing method is HMAC
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, http.ErrAbortHandler
 			}
@@ -53,6 +55,22 @@ func JWTAuth() gin.HandlerFunc {
 			userID, ok := claims["user_id"].(string)
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in token"})
+				c.Abort()
+				return
+			}
+
+			// Check for expiration
+			expiresAt, ok := claims["expires_at"].(float64) // exp is a float64 (Unix time)
+			if ok && float64(time.Now().Unix()) > expiresAt {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
+				c.Abort()
+				return
+			}
+
+			// Check the purpose of the token
+			purpose, ok := claims["purpose"].(string)
+			if !ok || purpose != "auth" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token purpose"})
 				c.Abort()
 				return
 			}

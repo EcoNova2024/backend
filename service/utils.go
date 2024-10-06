@@ -38,12 +38,13 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-// GenerateJWT generates a JWT token for the user
-func GenerateJWT(userID string) (string, error) {
+// GenerateJWT generates a JWT token for the user with purpose and expiration
+func GenerateJWT(userID, purpose string, expiresIn time.Duration) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET") // Fetch secret from environment variable
 	claims := jwt.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours
+		"exp":     time.Now().Add(expiresIn).Unix(), // Token valid for specified duration
+		"purpose": purpose,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString([]byte(jwtSecret)) // Use the secret from environment
@@ -66,17 +67,7 @@ func ObfuscateEmail(email string) string {
 
 // GenerateEmailVerificationToken generates a JWT token for email verification
 func GenerateEmailVerificationToken(userID string) (string, error) {
-	jwtSecret := os.Getenv("JWT_SECRET") // Fetch secret from environment variable
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Token valid for 24 hours
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(jwtSecret)) // Use the secret from environment
-	if err != nil {
-		return "", err
-	}
-	return signedToken, nil
+	return GenerateJWT(userID, "email_verification", time.Hour*24) // Token valid for 24 hours
 }
 
 // LoadEmailConfig loads email configuration from environment variables
@@ -104,8 +95,9 @@ func SendEmail(to string, subject string, body string) error {
 		err := smtp.SendMail(config.Host+":"+config.Port, auth, config.User, []string{to}, []byte(message))
 		if err != nil {
 			return fmt.Errorf("failed to send email: %w", err)
-		}*/
-	fmt.Print(body)
+		}
+	*/
+	fmt.Print(body) // For testing purposes, print the body
 	return nil
 }
 
@@ -122,16 +114,8 @@ func SendPasswordResetEmail(email, resetLink string) error {
 	body := fmt.Sprintf("Click the following link to reset your password: %s", resetLink)
 	return SendEmail(email, subject, body)
 }
+
+// GeneratePasswordResetToken generates a JWT token for password reset
 func GeneratePasswordResetToken(userID string) (string, error) {
-	jwtSecret := os.Getenv("JWT_SECRET") // Fetch secret from environment variable
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 1).Unix(), // Token valid for 1 hour
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(jwtSecret)) // Use the secret from environment
-	if err != nil {
-		return "", err
-	}
-	return signedToken, nil
+	return GenerateJWT(userID, "password_reset", time.Hour) // Token valid for 1 hour
 }

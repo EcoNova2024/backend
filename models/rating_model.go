@@ -16,6 +16,10 @@ type Rating struct {
 	Score     float64   `gorm:"not null" json:"score"`
 	CreatedAt time.Time `gorm:"default:current_timestamp" json:"created_at"`
 }
+type AddRating struct {
+	ProductID string  `gorm:"type:uuid;not null" json:"product_id"`
+	Score     float64 `gorm:"not null" json:"score"`
+}
 
 // BeforeCreate sets the UUID before creating a new record
 func (r *Rating) BeforeCreate(tx *gorm.DB) (err error) {

@@ -178,7 +178,7 @@ func (controller *UserController) UpdatePassword(c *gin.Context) {
 	var passwordData models.UpdatePassword
 
 	// Validate the JWT token using the service layer
-	userID, err := controller.userService.ValidateToken(token)
+	userID, err := controller.userService.ValidateToken(token, "password_reset")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return

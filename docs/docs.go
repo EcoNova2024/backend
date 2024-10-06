@@ -152,6 +152,27 @@ const docTemplate = `{
             }
         },
         "/products": {
+            "get": {
+                "description": "Get a product by its unique ID",
+                "summary": "Get a product by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ProductResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a new product with the given details",
                 "consumes": [
@@ -187,32 +208,15 @@ const docTemplate = `{
         },
         "/products/collaborative": {
             "get": {
-                "description": "Retrieve products based on collaborative filtering with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Products"
-                ],
-                "summary": "Get collaborative-based products",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    }
-                ],
+                "description": "Retrieve products based on collaborative filtering",
+                "summary": "Get collaborative recommendations",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Product"
+                                "$ref": "#/definitions/models.ProductResponse"
                             }
                         }
                     }
@@ -221,21 +225,12 @@ const docTemplate = `{
         },
         "/products/content-based": {
             "get": {
-                "description": "Retrieve products based on content, e.g., based on image URL",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Products"
-                ],
-                "summary": "Get content-based products",
+                "description": "Retrieve products based on content-based filtering using an image URL",
+                "summary": "Get content-based recommendations",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Image URL for content-based filtering",
+                        "description": "Image URL",
                         "name": "image_url",
                         "in": "query",
                         "required": true
@@ -247,7 +242,24 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Product"
+                                "$ref": "#/definitions/models.ProductResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/random": {
+            "get": {
+                "description": "Retrieve random products for unauthenticated users",
+                "summary": "Get random products",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ProductResponse"
                             }
                         }
                     }
@@ -256,30 +268,33 @@ const docTemplate = `{
         },
         "/products/user": {
             "get": {
-                "description": "Retrieve products that belong to a specific user",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Products"
-                ],
+                "description": "Get all products for a specific user",
                 "summary": "Get products by user ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Product"
+                                "$ref": "#/definitions/models.ProductResponse"
                             }
                         }
                     }
                 }
             }
         },
-        "/products/{id}/status": {
-            "put": {
-                "description": "Change the status of a product using its ID.",
+        "/ratings": {
+            "post": {
+                "description": "Creates a new rating for a product by a user",
                 "consumes": [
                     "application/json"
                 ],
@@ -287,62 +302,25 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Products"
+                    "Ratings"
                 ],
-                "summary": "Change Product Status",
+                "summary": "Create a new rating",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Product ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "New Status for the product",
-                        "name": "status",
+                        "description": "Rating details",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.AddRating"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Status updated successfully",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Product not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update status",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.Rating"
                         }
                     }
                 }
@@ -439,54 +417,6 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
-            }
-        },
-        "/ratings/{user_id}/{product_id}": {
-            "post": {
-                "description": "Creates a new rating for a product by a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Ratings"
-                ],
-                "summary": "Create a new rating",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Product ID",
-                        "name": "product_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Rating details",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Rating"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Rating"
-                        }
-                    }
-                }
             }
         },
         "/transactions/{item_id}": {
@@ -1034,6 +964,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.AddRating": {
+            "type": "object",
+            "properties": {
+                "product_id": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                }
+            }
+        },
         "models.AddTransactionRequest": {
             "type": "object",
             "properties": {
@@ -1110,51 +1051,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Product": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "description": "Category of the product",
-                    "type": "string"
-                },
-                "created_at": {
-                    "description": "Timestamp when the product was created",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "Description of the product",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Unique identifier for the product",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "Name of the product",
-                    "type": "string"
-                },
-                "price": {
-                    "description": "Price of the product",
-                    "type": "number"
-                },
-                "status": {
-                    "description": "Status of the product (uses varchar instead of enum for MySQL)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.ProductStatus"
-                        }
-                    ]
-                },
-                "sub_category": {
-                    "description": "Subcategory of the product",
-                    "type": "string"
-                },
-                "user_id": {
-                    "description": "ID of the user who owns the product",
-                    "type": "string"
-                }
-            }
-        },
         "models.ProductRequest": {
             "type": "object",
             "properties": {
@@ -1222,6 +1118,18 @@ const docTemplate = `{
                 "price": {
                     "description": "Product price",
                     "type": "number"
+                },
+                "rating": {
+                    "description": "Product rating",
+                    "type": "integer"
+                },
+                "rating_average": {
+                    "description": "Product rating average",
+                    "type": "number"
+                },
+                "rating_count": {
+                    "description": "Product rating count",
+                    "type": "integer"
                 },
                 "sub_category": {
                     "description": "Subcategory of the product",

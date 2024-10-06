@@ -1,4 +1,11 @@
 definitions:
+  models.AddRating:
+    properties:
+      product_id:
+        type: string
+      score:
+        type: number
+    type: object
   models.AddTransactionRequest:
     properties:
       action:
@@ -48,37 +55,6 @@ definitions:
     - email
     - password
     type: object
-  models.Product:
-    properties:
-      category:
-        description: Category of the product
-        type: string
-      created_at:
-        description: Timestamp when the product was created
-        type: string
-      description:
-        description: Description of the product
-        type: string
-      id:
-        description: Unique identifier for the product
-        type: string
-      name:
-        description: Name of the product
-        type: string
-      price:
-        description: Price of the product
-        type: number
-      status:
-        allOf:
-        - $ref: '#/definitions/models.ProductStatus'
-        description: Status of the product (uses varchar instead of enum for MySQL)
-      sub_category:
-        description: Subcategory of the product
-        type: string
-      user_id:
-        description: ID of the user who owns the product
-        type: string
-    type: object
   models.ProductRequest:
     properties:
       category:
@@ -127,6 +103,15 @@ definitions:
       price:
         description: Product price
         type: number
+      rating:
+        description: Product rating
+        type: integer
+      rating_average:
+        description: Product rating average
+        type: number
+      rating_count:
+        description: Product rating count
+        type: integer
       sub_category:
         description: Subcategory of the product
         type: string
@@ -368,6 +353,20 @@ paths:
       tags:
       - Comments
   /products:
+    get:
+      description: Get a product by its unique ID
+      parameters:
+      - description: Product ID
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductResponse'
+      summary: Get a product by ID
     post:
       consumes:
       - application/json
@@ -389,113 +388,85 @@ paths:
       summary: Create a new product
       tags:
       - Products
-  /products/{id}/status:
-    put:
-      consumes:
-      - application/json
-      description: Change the status of a product using its ID.
-      parameters:
-      - description: Product ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: New Status for the product
-        in: body
-        name: status
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Status updated successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid input
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Product not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Failed to update status
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Change Product Status
-      tags:
-      - Products
   /products/collaborative:
     get:
-      consumes:
-      - application/json
-      description: Retrieve products based on collaborative filtering with pagination
-      parameters:
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      produces:
-      - application/json
+      description: Retrieve products based on collaborative filtering
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Product'
+              $ref: '#/definitions/models.ProductResponse'
             type: array
-      summary: Get collaborative-based products
-      tags:
-      - Products
+      summary: Get collaborative recommendations
   /products/content-based:
     get:
-      consumes:
-      - application/json
-      description: Retrieve products based on content, e.g., based on image URL
+      description: Retrieve products based on content-based filtering using an image
+        URL
       parameters:
-      - description: Image URL for content-based filtering
+      - description: Image URL
         in: query
         name: image_url
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Product'
+              $ref: '#/definitions/models.ProductResponse'
             type: array
-      summary: Get content-based products
-      tags:
-      - Products
+      summary: Get content-based recommendations
+  /products/random:
+    get:
+      description: Retrieve random products for unauthenticated users
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ProductResponse'
+            type: array
+      summary: Get random products
   /products/user:
     get:
-      description: Retrieve products that belong to a specific user
-      produces:
-      - application/json
+      description: Get all products for a specific user
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Product'
+              $ref: '#/definitions/models.ProductResponse'
             type: array
       summary: Get products by user ID
+  /ratings:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new rating for a product by a user
+      parameters:
+      - description: Rating details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddRating'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Rating'
+      summary: Create a new rating
       tags:
-      - Products
+      - Ratings
   /ratings/{id}:
     delete:
       consumes:
@@ -511,38 +482,6 @@ paths:
       - application/json
       responses: {}
       summary: Delete a rating
-      tags:
-      - Ratings
-  /ratings/{user_id}/{product_id}:
-    post:
-      consumes:
-      - application/json
-      description: Creates a new rating for a product by a user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      - description: Product ID
-        in: path
-        name: product_id
-        required: true
-        type: string
-      - description: Rating details
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/models.Rating'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.Rating'
-      summary: Create a new rating
       tags:
       - Ratings
   /ratings/product/{product_id}/average:

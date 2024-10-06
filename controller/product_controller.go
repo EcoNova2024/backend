@@ -28,17 +28,6 @@ func NewProductController(productService *service.ProductService, transactionSer
 	}
 }
 
-// Helper function to parse UUID from the URL param
-func parseUUIDParam(c *gin.Context, paramName string) (uuid.UUID, error) {
-	idParam := c.Param(paramName)
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
-		return uuid.Nil, err
-	}
-	return id, nil
-}
-
 // Create handles the creation of a new product
 // @Summary      Create a new product
 // @Description  Create a new product with the given details
@@ -106,8 +95,6 @@ func (controller *ProductController) Create(c *gin.Context) {
 // @Description Get a product by its unique ID
 // @Param id query string true "Product ID"
 // @Success 200 {object} models.ProductResponse
-// @Failure 404 {object} gin.H{"error": "Product not found"}
-// @Failure 500 {object} gin.H{"error": "Failed to retrieve user information"}
 // @Router /products [get]
 func (controller *ProductController) GetOne(c *gin.Context) {
 	id := c.Query("id") // Retrieve the product ID from the query parameter
@@ -143,8 +130,6 @@ func (controller *ProductController) GetOne(c *gin.Context) {
 // @Description Retrieve products based on content-based filtering using an image URL
 // @Param image_url query string true "Image URL"
 // @Success 200 {array} models.ProductResponse
-// @Failure 400 {object} gin.H{"error": "Invalid image URL"}
-// @Failure 500 {object} gin.H{"error": "Failed to retrieve content-based products"}
 // @Router /products/content-based [get]
 func (controller *ProductController) GetContentBased(c *gin.Context) {
 	// Retrieve image URL from query parameters
@@ -154,13 +139,36 @@ func (controller *ProductController) GetContentBased(c *gin.Context) {
 		return
 	}
 
-	productIDs, err := controller.TransactionService.FetchContentBasedRecommendations(imageURL) // Updated method name
+	// Try to fetch content-based recommendations
+	productIDs, err := controller.TransactionService.FetchContentBasedRecommendations(imageURL)
 	if err != nil {
 		log.Printf("GetContentBased: failed to fetch recommendations: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve content-based products"})
+
+		// Fallback to get random products if content-based fetching fails
+		products, err := controller.productService.GetRandomProducts()
+		if err != nil {
+			log.Printf("GetContentBased: failed to fetch random products: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve random products"})
+			return
+		}
+
+		// Prepare product responses for random products
+		var randomProductResponses []models.ProductResponse
+		for _, product := range products {
+			productResponse, err := controller.populateAdditionalProductData(&product)
+			if err != nil {
+				log.Printf("GetProductsByUserID: failed to fetch additional data for random product %s: %v", product.ID.String(), err)
+				continue // Skip to the next product if there's an error
+			}
+
+			randomProductResponses = append(randomProductResponses, productResponse)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"products": randomProductResponses})
 		return
 	}
 
+	// If content-based recommendations are successful, proceed as usual
 	products, err := controller.productService.GetProductsByIDs(productIDs)
 	if err != nil {
 		log.Printf("GetContentBased: service error: %v", err)
@@ -168,7 +176,7 @@ func (controller *ProductController) GetContentBased(c *gin.Context) {
 		return
 	}
 
-	// Prepare product responses
+	// Prepare product responses for fetched products
 	var productResponses []models.ProductResponse
 	for _, product := range products {
 		productResponse, err := controller.populateAdditionalProductData(&product)
@@ -188,9 +196,6 @@ func (controller *ProductController) GetContentBased(c *gin.Context) {
 // @Description Get all products for a specific user
 // @Param user_id query string true "User ID"
 // @Success 200 {array} models.ProductResponse
-// @Failure 400 {object} gin.H{"error": "Invalid user ID format"}
-// @Failure 404 {object} gin.H{"error": "User not found"}
-// @Failure 500 {object} gin.H{"error": "Failed to retrieve user products"}
 // @Router /products/user [get]
 func (controller *ProductController) GetProductsByUserID(c *gin.Context) {
 	userIDStr := c.Query("user_id") // Retrieve the user ID from the query parameter
@@ -230,32 +235,30 @@ func (controller *ProductController) GetProductsByUserID(c *gin.Context) {
 // @Summary Get collaborative recommendations
 // @Description Retrieve products based on collaborative filtering
 // @Success 200 {array} models.ProductResponse
-// @Failure 500 {object} gin.H{"error": "Failed to retrieve collaborative products"}
 // @Router /products/collaborative [get]
 func (controller *ProductController) GetCollaborative(c *gin.Context) {
+	// Attempt to retrieve the user ID from the context
 	localID, exists := c.Get("user_id")
-	var userID uuid.UUID
-	if exists {
-		userID, _ = localID.(uuid.UUID)
+	if !exists {
+		log.Println("User ID not found in request")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User authentication required"})
+		return
 	}
 
-	var products []models.Product
-	var err error
-	if exists {
-		products, err = controller.productService.FetchCollaborativeRecommendations(userID)
-		if err != nil {
-			log.Printf("GetCollaborative: service error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve collaborative products"})
-			return
-		}
-	} else {
-		// Return random products if userID is not available
-		products, err = controller.productService.GetRandomProducts(userID)
-		if err != nil {
-			log.Printf("GetCollaborative: failed to fetch random products: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve random products"})
-			return
-		}
+	// Assert the user ID type to string or uuid.UUID as necessary
+	userID, ok := localID.(string) // or uuid.UUID based on your implementation
+	if !ok {
+		log.Println("Invalid user ID type")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Fetch collaborative recommendations
+	products, err := controller.productService.FetchCollaborativeRecommendations(userID)
+	if err != nil {
+		log.Printf("GetCollaborative: service error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve collaborative products"})
+		return
 	}
 
 	var productResponses []models.ProductResponse
@@ -263,6 +266,34 @@ func (controller *ProductController) GetCollaborative(c *gin.Context) {
 		productResponse, err := controller.populateAdditionalProductData(&product)
 		if err != nil {
 			log.Printf("GetCollaborative: failed to fetch additional data for product %s: %v", product.ID.String(), err)
+			continue // Skip to the next product if there's an error
+		}
+		productResponses = append(productResponses, productResponse)
+	}
+
+	// Return successful response with populated product data
+	c.JSON(http.StatusOK, gin.H{"products": productResponses})
+}
+
+// GetRandomProducts retrieves random products when the user is not logged in
+// @Summary Get random products
+// @Description Retrieve random products for unauthenticated users
+// @Success 200 {array} models.ProductResponse
+// @Router /products/random [get]
+func (controller *ProductController) GetRandomProducts(c *gin.Context) {
+	// Fetch random products from the product service
+	products, err := controller.productService.GetRandomProducts()
+	if err != nil {
+		log.Printf("GetRandomProducts: failed to fetch random products: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve random products"})
+		return
+	}
+
+	var productResponses []models.ProductResponse
+	for _, product := range products {
+		productResponse, err := controller.populateAdditionalProductData(&product)
+		if err != nil {
+			log.Printf("GetRandomProducts: failed to fetch additional data for product %s: %v", product.ID.String(), err)
 			continue // Skip to the next product if there's an error
 		}
 
@@ -278,7 +309,6 @@ func (controller *ProductController) populateAdditionalProductData(product *mode
 	if err != nil {
 		return productRes, err
 	}
-	productRes.Transactions = transactions
 
 	// Fetch average rating and rating count
 	averageRating, ratingCount, err := controller.RatingService.GetAverageRatingByProductId(product.ID)
@@ -286,10 +316,22 @@ func (controller *ProductController) populateAdditionalProductData(product *mode
 		return productRes, err
 	}
 	user, _ := controller.UserService.GetDemographicInformation(product.UserID.String())
-	productRes.User = *user
-	productRes.Rating, _ = controller.RatingService.GetPuanByUserIdItemId(product.UserID, product.ID)
-	productRes.RatingAverage = averageRating
-	productRes.RatingCount = ratingCount
 
+	UserRating, _ := controller.RatingService.GetPuanByUserIdItemId(product.UserID, product.ID)
+
+	productRes = models.ProductResponse{
+		User:          *user,
+		ID:            product.ID,
+		Name:          product.Name,
+		Description:   product.Description,
+		Price:         product.Price,
+		Category:      product.Category,
+		SubCategory:   product.SubCategory,
+		RatingCount:   ratingCount,
+		RatingAverage: averageRating,
+		Rating:        UserRating,
+		CreatedAt:     product.CreatedAt,
+		Transactions:  transactions,
+	}
 	return productRes, nil
 }

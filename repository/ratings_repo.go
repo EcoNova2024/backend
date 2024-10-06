@@ -57,17 +57,25 @@ func (r *RatingRepository) GetAverageRatingByProductId(productID uuid.UUID) (flo
 	return result.Average, result.Count, nil
 }
 
-// GetPuanByUserIdItemId retrieves the rating given by a user for a specific product
-func (r *RatingRepository) GetPuanByUserIdItemId(userID uuid.UUID, productID uuid.UUID) (int, error) {
+// FindByUserAndProduct finds a rating by user and product
+func (repo *RatingRepository) FindByUserAndProduct(userID uuid.UUID, productID uuid.UUID) (*models.Rating, error) {
 	var rating models.Rating
-
-	// Find the rating by user ID and product ID
-	if err := r.db.Where("user_id = ? AND product_id = ?", userID, productID).First(&rating).Error; err != nil {
+	// Perform the query to find the rating by userID and productID
+	err := repo.db.Where("user_id = ? AND product_id = ?", userID, productID).First(&rating).Error
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return 0, nil // Return 0 if no rating exists for this user and product
+			return nil, nil // No rating found, return nil
 		}
-		return 0, err // Return the error if something else went wrong
+		return nil, err // Some other error occurred
 	}
+	return &rating, nil // Return the found rating
+}
 
-	return int(rating.Score), nil
+// Update updates an existing rating in the database
+func (repo *RatingRepository) Update(rating *models.Rating) error {
+	// Perform the update operation
+	if err := repo.db.Save(rating).Error; err != nil {
+		return err
+	}
+	return nil
 }

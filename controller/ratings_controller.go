@@ -26,39 +26,29 @@ func NewRatingController(ratingService *service.RatingService) *RatingController
 // @Tags         Ratings
 // @Accept       json
 // @Produce      json
-// @Param        user_id    path      string  true   "User ID"
-// @Param        product_id path      string  true   "Product ID"
-// @Param        body       body      models.Rating  true   "Rating details"
-// @Success      201        {object}  models.Rating
-// @Router       /ratings/{user_id}/{product_id} [post]
+// @Param        body  body   models.AddRating  true  "Rating details"
+// @Success      201   {object}  models.Rating
+// @Router       /ratings [post]
 func (controller *RatingController) Create(c *gin.Context) {
-	var rating models.Rating
-	if err := c.ShouldBindJSON(&rating); err != nil {
+	// Parse the incoming AddRating model from the request
+	var addRating models.AddRating
+	if err := c.ShouldBindJSON(&addRating); err != nil {
 		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input", "details": err.Error()})
 		return
 	}
 
-	// Validate UUID fields
-	userID, err := uuid.Parse(c.Param("user_id"))
-	if err != nil {
-		log.Printf("Invalid user UUID: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user UUID format"})
+	// Get user_id from locals (assuming it's set in middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		log.Println("User ID not found in request")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User authentication required"})
 		return
 	}
 
-	productID, err := uuid.Parse(c.Param("product_id"))
+	// Call the service to create the rating
+	rating, err := controller.ratingService.Create(&addRating, userID.(string))
 	if err != nil {
-		log.Printf("Invalid product UUID: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product UUID format"})
-		return
-	}
-
-	rating.UserID = userID
-	rating.ProductID = productID
-
-	// Create rating
-	if err := controller.ratingService.Create(&rating); err != nil {
 		log.Printf("Error creating rating: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create rating", "details": err.Error()})
 		return

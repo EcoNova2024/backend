@@ -38,6 +38,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 }
 
 func (service *UserService) Create(req *models.SignUp) error {
+	// Create a new user with the provided information
 	user := &models.User{
 		Email:     req.Email,
 		Name:      req.Name,
@@ -46,35 +47,37 @@ func (service *UserService) Create(req *models.SignUp) error {
 		ImageURL:  req.ImageURL,
 	}
 
+	// Hash the password and handle any errors
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
-		return ErrInternal
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 	user.Password = hashedPassword
 
+	// Store the new user in the repository
 	if err := service.userRepo.Create(user); err != nil {
-		return ErrInternal
+		return fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return nil
 }
 
 func (service *UserService) Authenticate(email, password string) (string, error) {
+	// Retrieve user by email
 	user, err := service.userRepo.GetByEmail(email)
-	if err != nil {
-		return "", ErrUserNotFound
-	}
-	if user == nil {
-		return "", ErrUserNotFound
+	if err != nil || user == nil {
+		return "", ErrInvalidCredentials
 	}
 
+	// Validate the password
 	if !CheckPasswordHash(password, user.Password) {
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := GenerateJWT(user.ID.String())
+	// Generate JWT token for authentication
+	token, err := GenerateJWT(user.ID.String(), "auth", 3*time.Hour)
 	if err != nil {
-		return "", ErrInternal
+		return "", fmt.Errorf("failed to generate JWT: %w", err)
 	}
 
 	return token, nil
@@ -85,18 +88,25 @@ func (service *UserService) GetDemographicInformation(id string) (*models.User, 
 	if err != nil {
 		return nil, ErrUserNotFound
 	}
+
+	// Obfuscate sensitive information
 	user.Password = ""
 	user.Email = ObfuscateEmail(user.Email)
 	return user, nil
 }
 
 func (service *UserService) UpdateUser(userID string, req *models.UpdateUser) error {
+	// Retrieve existing user data
 	user, err := service.userRepo.GetByID(userID)
 	if err != nil {
 		return ErrUserNotFound
 	}
+
+	// Update user information
 	user.Name = req.NewUser
 	user.ImageURL = req.NewImage
+
+	// Persist updated user data
 	return service.userRepo.Update(userID, user)
 }
 
@@ -125,8 +135,7 @@ func (service *UserService) SendPasswordResetEmail(email string) error {
 	body := fmt.Sprintf("To reset your password, click the following link: %s", resetLink)
 
 	// Send the email
-	err = SendEmail(user.Email, subject, body)
-	if err != nil {
+	if err = SendEmail(user.Email, subject, body); err != nil {
 		return errors.New("failed to send password reset email")
 	}
 
@@ -140,7 +149,7 @@ func (service *UserService) SendEmailVerification(email string) error {
 		return errors.New("user not found")
 	}
 
-	// Generate verification token (could be a JWT or a random string)
+	// Generate verification token
 	verificationToken, err := GenerateEmailVerificationToken(user.ID.String())
 	if err != nil {
 		return errors.New("failed to generate verification token")
@@ -153,24 +162,24 @@ func (service *UserService) SendEmailVerification(email string) error {
 	subject := "Email Verification"
 	body := fmt.Sprintf("Please verify your email by clicking the following link: %s", verificationLink)
 
-	// Send the email (use a utility function or an external service to send the email)
-	err = SendEmail(user.Email, subject, body)
-	if err != nil {
+	// Send the email
+	if err = SendEmail(user.Email, subject, body); err != nil {
 		return errors.New("failed to send verification email")
 	}
 
 	return nil
 }
+
 func (service *UserService) UpdatePassword(userID, newPassword string) error {
 	hashedPassword, err := HashPassword(newPassword)
 	if err != nil {
-		return ErrInternal
+		return fmt.Errorf("failed to hash new password: %w", err)
 	}
 	return service.userRepo.UpdatePassword(userID, hashedPassword)
 }
 
 // ValidateToken checks if the reset token is a valid JWT and extracts the user ID
-func (service *UserService) ValidateToken(token string) (string, error) {
+func (service *UserService) ValidateToken(token string, expectedPurpose string) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET") // Fetch secret from environment variable
 
 	// Parse the token
@@ -181,21 +190,44 @@ func (service *UserService) ValidateToken(token string) (string, error) {
 		return []byte(jwtSecret), nil
 	})
 
-	if err != nil || !parsedToken.Valid {
-		return "", errors.New("invalid token")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	// Extract user ID from claims
+	if !parsedToken.Valid {
+		return "", ErrInvalidToken
+	}
+
+	// Extract claims
 	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
-		userID := claims["user_id"].(string) // Extract user_id from JWT claims
-		return userID, nil
+		// Check purpose
+		if purpose, ok := claims["purpose"].(string); !ok || purpose != expectedPurpose {
+			return "", errors.New("token purpose does not match expected purpose")
+		}
+
+		// Check if the token is expired
+		if exp, ok := claims["exp"].(float64); ok {
+			expirationTime := time.Unix(int64(exp), 0) // Convert expiration to time.Time
+			if time.Now().After(expirationTime) {
+				return "", ErrTokenExpired // Return error if token is expired
+			}
+		} else {
+			return "", errors.New("expiration time not found in token claims")
+		}
+
+		// Extract user ID
+		if userID, ok := claims["user_id"].(string); ok {
+			return userID, nil
+		}
+		return "", errors.New("user ID not found in token claims")
 	}
 
 	return "", errors.New("invalid token claims")
 }
+
 func (service *UserService) VerifyEmail(token string) error {
 	// Validate the token and extract user ID
-	userID, err := service.ValidateToken(token)
+	userID, err := service.ValidateToken(token, "email_verification")
 	if err != nil {
 		return errors.New("invalid or expired token")
 	}

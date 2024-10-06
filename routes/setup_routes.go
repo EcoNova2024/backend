@@ -56,18 +56,19 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Product routes
 	products := router.Group("/products")
 	{
-		products.POST("/", middleware.JWTAuth(), productController.Create) // Create a new product
-		products.GET("/:id", productController.GetOne)                     // Get a product by ID
-		products.GET("/user", productController.GetProductsByUserID)       // Get products by user ID (from JWT)
-		products.GET("/content-based", productController.GetContentBased)  // Get content-based recommendations
-		products.GET("/collaborative", productController.GetCollaborative) // Get collaborative-based recommendations
+		products.POST("/", middleware.JWTAuth(), productController.Create)                       // Create a new product
+		products.GET("/:id", productController.GetOne)                                           // Get a product by ID
+		products.GET("/user", productController.GetProductsByUserID)                             // Get products by user ID (from JWT)
+		products.GET("/content-based", productController.GetContentBased)                        // Get content-based recommendations
+		products.GET("/collaborative", middleware.JWTAuth(), productController.GetCollaborative) // Get collaborative-based recommendations
+		products.GET("random", productController.GetRandomProducts)                              // Get random recommendations
 	}
 
 	// Rating routes
 	ratings := router.Group("/ratings")
 	{
-		ratings.POST("/:user_id/:product_id", ratingController.Create)                            // Create a new rating
-		ratings.DELETE("/:id", ratingController.Delete)                                           // Delete a rating by ID
+		ratings.POST("/", middleware.JWTAuth(), ratingController.Create)                          // Create a new rating
+		ratings.DELETE("/:id", middleware.JWTAuth(), ratingController.Delete)                     // Delete a rating by ID
 		ratings.GET("/user/:user_id", ratingController.GetRatedProductsByUserId)                  // Get all rated products by user ID
 		ratings.GET("/product/:product_id/average", ratingController.GetAverageRatingByProductId) // Get average rating and count by product ID
 	}
