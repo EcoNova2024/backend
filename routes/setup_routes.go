@@ -18,21 +18,18 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	productRepo := repoFactory.GetProductRepository()
 	ratingRepo := repoFactory.GetRatingRepository()
 	userRepo := repoFactory.GetUserRepository()
-	commentsRepo := repoFactory.GetCommentsRepository()
 	transactionRepo := repoFactory.GetTransactionRepository()
 
 	// Create services
 	productService := service.NewProductService(productRepo)
 	ratingService := service.NewRatingService(ratingRepo)
 	userService := service.NewUserService(userRepo)
-	commentsService := service.NewCommentsService(commentsRepo)
 	transactionService := service.NewTransactionService(transactionRepo)
 
 	// Create controllers
 	productController := controller.NewProductController(productService, transactionService, userService, ratingService)
 	ratingController := controller.NewRatingController(ratingService)
 	userController := controller.NewUserController(userService)
-	commentsController := controller.NewCommentsController(commentsService)
 	homeController := controller.NewHomeController()
 	transactionController := controller.NewTransactionController(transactionService, productService)
 
@@ -71,15 +68,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		ratings.DELETE("/:id", middleware.JWTAuth(), ratingController.Delete)                     // Delete a rating by ID
 		ratings.GET("/user/:user_id", ratingController.GetRatedProductsByUserId)                  // Get all rated products by user ID
 		ratings.GET("/product/:product_id/average", ratingController.GetAverageRatingByProductId) // Get average rating and count by product ID
-	}
-
-	// Comments routes
-	comments := router.Group("/comments")
-	{
-		comments.POST("", commentsController.Create)                                 // Create a new comment
-		comments.POST("/:comment_id/hide", commentsController.HideComment)           // Hide a comment
-		comments.GET("/user/:user_id", commentsController.GetCommentsByUserId)       // Get comments by user ID
-		comments.GET("/product/:product_id", commentsController.GetCommentsByItemId) // Get comments by product ID
 	}
 
 	// Transaction routes

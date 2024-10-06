@@ -16,7 +16,8 @@ var (
 	// Authentication errors
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrEmailNotVerified   = errors.New("email not verified")
-
+	ErrProductNotFound    = errors.New("product not found")
+	ErrUserNotFound       = errors.New("user not found")
 	// Validation errors
 	ErrInvalidInput       = errors.New("invalid input")
 	ErrEmailAlreadyExists = errors.New("email already exists")

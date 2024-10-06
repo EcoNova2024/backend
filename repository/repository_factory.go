@@ -27,11 +27,6 @@ func (f *RepositoryFactory) GetUserRepository() *UserRepository {
 	return NewUserRepository(f.db)
 }
 
-// GetCommentsRepository returns a new instance of CommentsRepository
-func (f *RepositoryFactory) GetCommentsRepository() *CommentsRepository {
-	return NewCommentsRepository(f.db)
-}
-
 func (f *RepositoryFactory) GetTransactionRepository() *TransactionRepository {
 	return NewTransactionRepository(f.db)
 }
