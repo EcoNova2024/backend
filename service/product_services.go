@@ -41,8 +41,14 @@ func (s *ProductService) Create(product *models.ProductRequest, userID uuid.UUID
 }
 
 // Update an existing product
-func (s *ProductService) Update(product *models.Product) error {
-	return s.productRepo.Update(product)
+// Update updates the product and returns an error if the operation fails
+func (service *ProductService) Update(product *models.Product) error {
+	fmt.Println(product)
+	err := service.productRepo.Update(product)
+	if err != nil {
+		return fmt.Errorf("failed to update product: %w", err)
+	}
+	return nil
 }
 
 // Delete a product by ID

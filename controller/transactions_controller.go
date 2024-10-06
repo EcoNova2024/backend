@@ -3,6 +3,7 @@ package controller
 import (
 	"backend/models"
 	"backend/service"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -88,17 +89,26 @@ func (controller *TransactionController) AddTransactionToItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add transaction", "details": err.Error()})
 		return
 	}
-
-	// If the action is "revitalized", update the product status to "restored"
+	product.UserID = transaction.UserID
+	product.Price = transactionReq.Price
 	if transactionReq.Action == "revitalized" {
-		product.Status = "restored"                     // Update the status field
-		err = controller.productService.Update(product) // Save the updated product
-		if err != nil {
-			log.Printf("Error updating product status: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product status", "details": err.Error()})
-			return
+		product.Status = "restored"
+	} else {
+		if transaction.Action == "submited" {
+			product.Status = "available"
+
+		} else {
+			product.Status = "sold"
 		}
+
 	}
+	err = controller.productService.Update(product)
+	if err != nil {
+		log.Printf("Error updating product status: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product status", "details": err.Error()})
+		return
+	}
+	fmt.Println(product.Status)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Transaction added successfully", "transaction": t})
 }

@@ -92,9 +92,10 @@ func (controller *ProductController) Create(c *gin.Context) {
 
 // GetOne retrieves a product by its ID
 // @Summary Get a product by ID
+// @Tags         Products
 // @Description Get a product by its unique ID
 // @Param id query string true "Product ID"
-// @Success 200 {object} models.ProductResponse
+// @Success 200 {object} models.DetailedProductResponse
 // @Router /products [get]
 func (controller *ProductController) GetOne(c *gin.Context) {
 	id := c.Query("id") // Retrieve the product ID from the query parameter
@@ -121,12 +122,17 @@ func (controller *ProductController) GetOne(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve additional product data"})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"product": productResponse})
+	detailedProductResponse, err := controller.populateAdditionalTransactionData(&productResponse)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve additional Transaction data"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"product": detailedProductResponse})
 }
 
 // GetContentBased retrieves products based on content-based filtering
 // @Summary Get content-based recommendations
+// @Tags         Products
 // @Description Retrieve products based on content-based filtering using an image URL
 // @Param image_url query string true "Image URL"
 // @Success 200 {array} models.ProductResponse
@@ -193,6 +199,7 @@ func (controller *ProductController) GetContentBased(c *gin.Context) {
 
 // GetProductsByUserID retrieves products by user ID
 // @Summary Get products by user ID
+// @Tags         Products
 // @Description Get all products for a specific user
 // @Param user_id query string true "User ID"
 // @Success 200 {array} models.ProductResponse
@@ -233,6 +240,7 @@ func (controller *ProductController) GetProductsByUserID(c *gin.Context) {
 
 // GetCollaborative retrieves products using a collaborative filtering approach
 // @Summary Get collaborative recommendations
+// @Tags         Products
 // @Description Retrieve products based on collaborative filtering
 // @Success 200 {array} models.ProductResponse
 // @Router /products/collaborative [get]
@@ -277,6 +285,7 @@ func (controller *ProductController) GetCollaborative(c *gin.Context) {
 
 // GetRandomProducts retrieves random products when the user is not logged in
 // @Summary Get random products
+// @Tags         Products
 // @Description Retrieve random products for unauthenticated users
 // @Success 200 {array} models.ProductResponse
 // @Router /products/random [get]
@@ -303,6 +312,83 @@ func (controller *ProductController) GetRandomProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }
 
+// GetRestoredProducts retrieves products with the status "restored"
+// @Summary Get restored products
+// @Tags         Products
+// @Description Retrieve products with the status "restored"
+// @Success 200 {array} models.ProductResponse
+// @Router /products/restored [get]
+func (controller *ProductController) GetRestoredProducts(c *gin.Context) {
+	// Fetch restored products from the product service
+	products, err := controller.productService.GetRestoredProducts()
+	if err != nil {
+		log.Printf("GetRestoredProducts: failed to fetch restored products: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve restored products"})
+		return
+	}
+
+	var productResponses []models.ProductResponse
+	for _, product := range products {
+		productResponse, err := controller.populateAdditionalProductData(&product)
+		if err != nil {
+			log.Printf("GetRestoredProducts: failed to fetch additional data for product %s: %v", product.ID.String(), err)
+			continue // Skip to the next product if there's an error
+		}
+
+		productResponses = append(productResponses, productResponse)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"products": productResponses})
+}
+func (controller *ProductController) populateAdditionalTransactionData(product *models.ProductResponse) (models.DetailedProductResponse, error) {
+	var productRes models.DetailedProductResponse
+
+	// Fetch transactions for the product
+	transactions, err := controller.TransactionService.GetByProductID(product.ID)
+	if err != nil {
+		return productRes, err
+	}
+
+	// Iterate over each transaction to fetch demographic information for the user
+	var detailedTransactions []models.DetailedTransaction
+	for _, transaction := range transactions {
+		// Fetch the demographic information for the user involved in the transaction
+		user, err := controller.UserService.GetDemographicInformation(transaction.UserID.String())
+		if err != nil {
+			return productRes, err
+		}
+
+		// Construct a detailed transaction with user demographic information
+		detailedTransaction := models.DetailedTransaction{
+			ID:          transaction.ID,
+			ItemID:      transaction.ItemID,
+			Description: transaction.Description,
+			Action:      transaction.Action,
+			User:        *user, // Attach the user's demographic info
+		}
+
+		// Add to the slice of detailed transactions
+		detailedTransactions = append(detailedTransactions, detailedTransaction)
+	}
+
+	productRes = models.DetailedProductResponse{
+		User:          product.User.ID,
+		ID:            product.ID,
+		Name:          product.Name,
+		Description:   product.Description,
+		Price:         product.Price,
+		Category:      product.Category,
+		SubCategory:   product.SubCategory,
+		RatingCount:   product.RatingCount,
+		RatingAverage: product.RatingAverage,
+		Rating:        product.Rating,
+		CreatedAt:     product.CreatedAt,
+		Status:        product.Status,
+		Transactions:  detailedTransactions,
+	}
+
+	return productRes, nil
+}
 func (controller *ProductController) populateAdditionalProductData(product *models.Product) (models.ProductResponse, error) {
 	var productRes models.ProductResponse
 	transactions, err := controller.TransactionService.GetByProductID(product.ID)
@@ -335,32 +421,4 @@ func (controller *ProductController) populateAdditionalProductData(product *mode
 		Transactions:  transactions,
 	}
 	return productRes, nil
-}
-
-// GetRestoredProducts retrieves products with the status "restored"
-// @Summary Get restored products
-// @Description Retrieve products with the status "restored"
-// @Success 200 {array} models.ProductResponse
-// @Router /products/restored [get]
-func (controller *ProductController) GetRestoredProducts(c *gin.Context) {
-	// Fetch restored products from the product service
-	products, err := controller.productService.GetRestoredProducts()
-	if err != nil {
-		log.Printf("GetRestoredProducts: failed to fetch restored products: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve restored products"})
-		return
-	}
-
-	var productResponses []models.ProductResponse
-	for _, product := range products {
-		productResponse, err := controller.populateAdditionalProductData(&product)
-		if err != nil {
-			log.Printf("GetRestoredProducts: failed to fetch additional data for product %s: %v", product.ID.String(), err)
-			continue // Skip to the next product if there's an error
-		}
-
-		productResponses = append(productResponses, productResponse)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }

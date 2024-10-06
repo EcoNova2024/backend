@@ -23,8 +23,12 @@ func (r *ProductRepository) Create(product *models.Product) error {
 }
 
 // Update updates an existing product in the database
-func (r *ProductRepository) Update(product *models.Product) error {
-	return r.db.Save(product).Error
+func (repo *ProductRepository) Update(product *models.Product) error {
+	// Using GORM's Save method to update the entire product struct
+	if err := repo.db.Save(product).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // Delete removes a product from the database by ID

@@ -87,4 +87,28 @@ type AddTransactionRequest struct {
 	Description string            `gorm:"type:text" json:"description"`            // Description of the transaction
 	Action      TransactionAction `gorm:"type:varchar(20);not null" json:"action"` // Action type of the transaction
 	ImageURL    string            `gorm:"type:varchar(255)" json:"image_url"`      // URL of the transaction image
+	Price       float64           `gorm:"type:float64" json:"price"`               // Price of the transaction
+}
+type DetailedProductResponse struct {
+	ID            uuid.UUID             `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primary_key"` // Product ID
+	User          uuid.UUID             `gorm:"type:uuid;not null" json:"user_id"`                          // Associated user (owner of the product)
+	Transactions  []DetailedTransaction `gorm:"foreignKey:ItemID" json:"transactions"`                      // List of transactions related to the product
+	Name          string                `json:"name"`                                                       // Product name
+	Description   string                `json:"description"`                                                // Product description
+	Price         float64               `json:"price"`                                                      // Product price
+	SubCategory   string                `json:"sub_category"`                                               // Subcategory of the product
+	Rating        int                   `json:"rating"`                                                     // Product rating
+	RatingCount   int                   `json:"rating_count"`                                               // Product rating count
+	Status        ProductStatus         `json:"status,omitempty"`
+	RatingAverage float64               `json:"rating_average"`                   // Product rating average
+	Category      string                `json:"category"`                         // Category of the product
+	CreatedAt     time.Time             `json:"created_at" gorm:"autoCreateTime"` // Timestamp when the product was created
+}
+
+type DetailedTransaction struct {
+	ID          uuid.UUID         `gorm:"type:uuid;primaryKey;unique" json:"id"` // Primary key, unique identifier for each transaction
+	ItemID      uuid.UUID         `gorm:"type:uuid;not null" json:"item_id"`     // Reference to the product involved in the transaction
+	User        User              `gorm:"foreignKey:UserID" json:"user"`
+	Description string            `gorm:"type:text" json:"description"` // Description of the transaction
+	Action      TransactionAction `gorm:"type:varchar(20);not null" json:"action"`
 }

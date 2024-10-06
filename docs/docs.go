@@ -18,6 +18,9 @@ const docTemplate = `{
         "/products": {
             "get": {
                 "description": "Get a product by its unique ID",
+                "tags": [
+                    "Products"
+                ],
                 "summary": "Get a product by ID",
                 "parameters": [
                     {
@@ -32,7 +35,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ProductResponse"
+                            "$ref": "#/definitions/models.DetailedProductResponse"
                         }
                     }
                 }
@@ -73,6 +76,9 @@ const docTemplate = `{
         "/products/collaborative": {
             "get": {
                 "description": "Retrieve products based on collaborative filtering",
+                "tags": [
+                    "Products"
+                ],
                 "summary": "Get collaborative recommendations",
                 "responses": {
                     "200": {
@@ -90,6 +96,9 @@ const docTemplate = `{
         "/products/content-based": {
             "get": {
                 "description": "Retrieve products based on content-based filtering using an image URL",
+                "tags": [
+                    "Products"
+                ],
                 "summary": "Get content-based recommendations",
                 "parameters": [
                     {
@@ -116,6 +125,9 @@ const docTemplate = `{
         "/products/random": {
             "get": {
                 "description": "Retrieve random products for unauthenticated users",
+                "tags": [
+                    "Products"
+                ],
                 "summary": "Get random products",
                 "responses": {
                     "200": {
@@ -133,6 +145,9 @@ const docTemplate = `{
         "/products/restored": {
             "get": {
                 "description": "Retrieve products with the status \"restored\"",
+                "tags": [
+                    "Products"
+                ],
                 "summary": "Get restored products",
                 "responses": {
                     "200": {
@@ -150,6 +165,9 @@ const docTemplate = `{
         "/products/user": {
             "get": {
                 "description": "Get all products for a specific user",
+                "tags": [
+                    "Products"
+                ],
                 "summary": "Get products by user ID",
                 "parameters": [
                     {
@@ -874,6 +892,92 @@ const docTemplate = `{
                 "image_url": {
                     "description": "URL of the transaction image",
                     "type": "string"
+                },
+                "price": {
+                    "description": "Price of the transaction",
+                    "type": "number"
+                }
+            }
+        },
+        "models.DetailedProductResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "Category of the product",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Timestamp when the product was created",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Product description",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Product ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Product name",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "Product price",
+                    "type": "number"
+                },
+                "rating": {
+                    "description": "Product rating",
+                    "type": "integer"
+                },
+                "rating_average": {
+                    "description": "Product rating average",
+                    "type": "number"
+                },
+                "rating_count": {
+                    "description": "Product rating count",
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.ProductStatus"
+                },
+                "sub_category": {
+                    "description": "Subcategory of the product",
+                    "type": "string"
+                },
+                "transactions": {
+                    "description": "List of transactions related to the product",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.DetailedTransaction"
+                    }
+                },
+                "user_id": {
+                    "description": "Associated user (owner of the product)",
+                    "type": "string"
+                }
+            }
+        },
+        "models.DetailedTransaction": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/definitions/models.TransactionAction"
+                },
+                "description": {
+                    "description": "Description of the transaction",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Primary key, unique identifier for each transaction",
+                    "type": "string"
+                },
+                "item_id": {
+                    "description": "Reference to the product involved in the transaction",
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },
@@ -971,6 +1075,9 @@ const docTemplate = `{
                 "rating_count": {
                     "description": "Product rating count",
                     "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.ProductStatus"
                 },
                 "sub_category": {
                     "description": "Subcategory of the product",
