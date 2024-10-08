@@ -5,6 +5,7 @@ import (
 	"backend/models"
 	"backend/service"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -70,7 +71,7 @@ func (controller *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{"token": token, "expires_at": time.Now().Add(3 * time.Hour)})
 }
 
 // GetDemographicInformation retrieves demographic information for a user
