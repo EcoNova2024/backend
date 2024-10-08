@@ -426,7 +426,7 @@ func (controller *ProductController) populateAdditionalProductData(product *mode
 // GetRatedProductsByUserID godoc
 // @Summary Get rated products by user ID
 // @Description Fetches a list of products rated by the specified user
-// @Tags products
+// @Tags Products
 // @Accept json
 // @Produce json
 // @Param user_id query string true "User ID"

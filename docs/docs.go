@@ -152,7 +152,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "products"
+                    "product"
                 ],
                 "summary": "Get rated products by user ID",
                 "parameters": [

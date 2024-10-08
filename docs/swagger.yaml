@@ -407,7 +407,7 @@ paths:
             type: array
       summary: Get rated products by user ID
       tags:
-      - products
+      - product
   /products/restored:
     get:
       description: Retrieve products with the status "restored"
