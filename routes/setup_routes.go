@@ -48,6 +48,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		users.POST("/password/reset", userController.SendPasswordResetEmail)         // DONE!
 		users.POST("/verify", userController.VerifyEmail)                            // DONE!
 		users.POST("/email/send-verification", userController.SendEmailVerification) // DONE!
+		users.GET("/search", userController.GetByName)
 	}
 
 	// Product routes
@@ -60,6 +61,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		products.GET("/collaborative", middleware.JWTAuth(), productController.GetCollaborative) // Get collaborative-based recommendations
 		products.GET("/restored", productController.GetRestoredProducts)                         // Get restored products
 		products.GET("/random", productController.GetRandomProducts)                             // Get random products
+		products.GET("/rated", productController.GetRatedProductsByUserID)
 	}
 
 	// Rating routes

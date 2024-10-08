@@ -385,6 +385,29 @@ paths:
       summary: Get random products
       tags:
       - Products
+  /products/rated:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a list of products rated by the specified user
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of rated products
+          schema:
+            items:
+              $ref: '#/definitions/models.ProductResponse'
+            type: array
+      summary: Get rated products by user ID
+      tags:
+      - products
   /products/restored:
     get:
       description: Retrieve products with the status "restored"
@@ -788,6 +811,41 @@ paths:
               type: string
             type: object
       summary: Send Password Reset Email
+      tags:
+      - Users
+  /users/search:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves up to 10 users whose names start with the provided prefix.
+      parameters:
+      - description: Name prefix to search for
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get users by name prefix
       tags:
       - Users
   /users/signup:

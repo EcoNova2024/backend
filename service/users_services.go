@@ -240,3 +240,8 @@ func (service *UserService) VerifyEmail(token string) error {
 
 	return nil
 }
+
+// GetUsersByNamePrefix retrieves users whose names start with the given prefix (up to 10 users)
+func (s *UserService) GetUsersByNamePrefix(name string) ([]models.User, error) {
+	return s.userRepo.FindByNamePrefix(name)
+}

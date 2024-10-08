@@ -3,6 +3,7 @@ package repository
 
 import (
 	"backend/models"
+	"log"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -78,4 +79,18 @@ func (repo *RatingRepository) Update(rating *models.Rating) error {
 		return err
 	}
 	return nil
+}
+
+// GetRatedItemsByUserID fetches product IDs rated by a specific user.
+func (repo *RatingRepository) GetRatedItemsByUserID(userID string) ([]string, error) {
+	var productIDs []string
+
+	// Fetch the ratings made by the user from the database
+	err := repo.db.Table("ratings").Where("user_id = ?", userID).Pluck("product_id", &productIDs).Error
+	if err != nil {
+		log.Printf("Error fetching rated items for user ID %s: %v", userID, err) // Log the error for debugging
+		return nil, err
+	}
+
+	return productIDs, nil
 }

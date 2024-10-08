@@ -422,3 +422,41 @@ func (controller *ProductController) populateAdditionalProductData(product *mode
 	}
 	return productRes, nil
 }
+
+// GetRatedProductsByUserID godoc
+// @Summary Get rated products by user ID
+// @Description Fetches a list of products rated by the specified user
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param user_id query string true "User ID"
+// @Success 200 {array} models.ProductResponse "List of rated products"
+// @Router /products/rated [get]
+func (controller *ProductController) GetRatedProductsByUserID(c *gin.Context) {
+	userID := c.Query("user_id")
+
+	// Fetch the ratings made by the user
+	ratedItems, err := controller.RatingService.GetRatedProductIDsByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch rated items"})
+		return
+	}
+
+	// Iterate through the rated items and fetch product details for each
+	var ratedProducts []models.ProductResponse
+	for _, id := range ratedItems {
+		productID, _ := uuid.Parse(id)
+		product, err := controller.productService.GetByID(productID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch product details"})
+			return
+		}
+
+		// Append the product to the result
+		p, _ := controller.populateAdditionalProductData(product)
+		ratedProducts = append(ratedProducts, p)
+	}
+
+	// Return the list of rated products
+	c.JSON(http.StatusOK, ratedProducts)
+}

@@ -112,3 +112,8 @@ func (service *RatingService) GetAverageRatingByProductId(productID uuid.UUID) (
 	}
 	return average, count, nil
 }
+
+func (service *RatingService) GetRatedProductIDsByUserID(userID string) ([]string, error) {
+	// Delegate to repository to get product IDs
+	return service.ratingRepo.GetRatedItemsByUserID(userID)
+}

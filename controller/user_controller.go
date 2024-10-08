@@ -274,3 +274,30 @@ func (controller *UserController) SendEmailVerification(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Verification email sent successfully"})
 }
+
+// GetByName
+// @Summary      Get users by name prefix
+// @Description  Retrieves up to 10 users whose names start with the provided prefix.
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        name  query  string  true  "Name prefix to search for"
+// @Success      200   {array}  models.User   "List of users"
+// @Failure      400   {object}  map[string]string  "Bad Request"
+// @Failure      500   {object}  map[string]string  "Internal Server Error"
+// @Router       /users/search [get]
+func (controller *UserController) GetByName(c *gin.Context) {
+	name := c.Query("name") // Get the 'name' parameter from query string
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Name parameter is required"})
+		return
+	}
+
+	users, err := controller.userService.GetUsersByNamePrefix(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
+}

@@ -83,3 +83,13 @@ func (repo *UserRepository) VerifyEmail(userID string) error {
 
 	return nil
 }
+
+// FindByNamePrefix finds users whose names start with the provided prefix (up to 10 users)
+func (r *UserRepository) FindByNamePrefix(name string) ([]models.User, error) {
+	var users []models.User
+	result := r.db.Where("name LIKE ?", name+"%").Limit(10).Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
+}
