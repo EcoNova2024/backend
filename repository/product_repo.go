@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"backend/models"
+	"github.com/EcoNova2024/backend/backend/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
