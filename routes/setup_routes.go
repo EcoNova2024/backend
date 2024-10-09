@@ -2,10 +2,10 @@
 package routes
 
 import (
-	"backend/controller"
-	"backend/middleware" // Import JWT middleware
-	"backend/repository"
-	"backend/service"
+	"github.com/EcoNova2024/backend/backend/controller"
+	"github.com/EcoNova2024/backend/backend/middleware" // Import JWT middleware
+	"github.com/EcoNova2024/backend/backend/repository"
+	"github.com/EcoNova2024/backend/backend/service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
