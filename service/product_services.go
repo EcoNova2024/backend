@@ -1,8 +1,8 @@
 package service
 
 import (
-	"backend/models"
-	"backend/repository"
+	"github.com/EcoNova2024/backend/backend/models"
+	"github.com/EcoNova2024/backend/backend/repository"
 	"encoding/json"
 	"fmt"
 	"net/http"
