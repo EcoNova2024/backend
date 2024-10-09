@@ -2,7 +2,7 @@
 package repository
 
 import (
-	"github.com/EcoNova2024/backend/backend/models"
+	"github.com/EcoNova2024/backend/models"
 	"log"
 
 	"github.com/google/uuid"
