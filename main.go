@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/EcoNova2024/backend/backend/database"
-	"github.com/EcoNova2024/backend/backend/routes"
+	"github.com/EcoNova2024/backend/database"
+	"github.com/EcoNova2024/backend/routes"
 	"log"
 	"os"
 
-	_ "github.com/EcoNova2024/backend/backend/docs" // Import the generated Swagger docs
+	_ "github.com/EcoNova2024/backend/docs" // Import the generated Swagger docs
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
