@@ -1,4 +1,4 @@
-package "https://github.com/EcoNova2024/backend/database"
+package database
 
 import (
 	"log"
