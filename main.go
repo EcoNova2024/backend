@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	_ "backend/docs" // Import the generated Swagger docs
+	_ "github.com/EcoNova2024/backend/backend/docs" // Import the generated Swagger docs
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
