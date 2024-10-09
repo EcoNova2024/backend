@@ -1,4 +1,4 @@
-module backend
+module https://github.com/EcoNova2024/backend
 
 go 1.23
 
