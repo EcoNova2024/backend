@@ -2,8 +2,8 @@
 package controller
 
 import (
-	"github.com/EcoNova2024/backend/backend/models"
-	"github.com/EcoNova2024/backend/backend/service"
+	"github.com/EcoNova2024/backend/models"
+	"github.com/EcoNova2024/backend/service"
 	"net/http"
 	"time"
 
