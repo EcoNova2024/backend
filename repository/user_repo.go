@@ -2,7 +2,7 @@
 package repository
 
 import (
-	"backend/models"
+	"github.com/EcoNova2024/backend/backend/models"
 	"errors"
 
 	"gorm.io/gorm"
