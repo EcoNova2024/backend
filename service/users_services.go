@@ -2,8 +2,8 @@
 package service
 
 import (
-	"github.com/EcoNova2024/backend/backend/models"
-	"github.com/EcoNova2024/backend/backend/repository"
+	"github.com/EcoNova2024/backend/models"
+	"github.com/EcoNova2024/backend/repository"
 	"errors"
 	"fmt"
 	"os"
