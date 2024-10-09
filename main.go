@@ -1,8 +1,8 @@
 package main
 
 import (
-	"backend/database"
-	"backend/routes"
+	"github.com/EcoNova2024/backend/backend/database"
+	"github.com/EcoNova2024/backend/backend/routes"
 	"log"
 	"os"
 
