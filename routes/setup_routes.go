@@ -49,6 +49,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		users.POST("/verify", userController.VerifyEmail)                            // DONE!
 		users.POST("/email/send-verification", userController.SendEmailVerification) // DONE!
 		users.GET("/search", userController.GetByName)
+		users.GET("/email", userController.GetUserByEmail)
 	}
 
 	// Product routes

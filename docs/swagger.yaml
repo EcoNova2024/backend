@@ -407,7 +407,7 @@ paths:
             type: array
       summary: Get rated products by user ID
       tags:
-      - product
+      - Products
   /products/restored:
     get:
       description: Retrieve products with the status "restored"
@@ -618,6 +618,44 @@ paths:
       tags:
       - Users
   /users/email:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a user by their email address from query parameters
+      parameters:
+      - description: Email Address
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a user by email
+      tags:
+      - users
     put:
       consumes:
       - application/json

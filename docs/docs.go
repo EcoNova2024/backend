@@ -152,7 +152,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "product"
+                    "Products"
                 ],
                 "summary": "Get rated products by user ID",
                 "parameters": [
@@ -456,6 +456,63 @@ const docTemplate = `{
             }
         },
         "/users/email": {
+            "get": {
+                "description": "Retrieves a user by their email address from query parameters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get a user by email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email Address",
+                        "name": "email",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "put": {
                 "description": "Update user's email address with a new email.",
                 "consumes": [

@@ -70,8 +70,9 @@ func (controller *UserController) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials", "details": err.Error()})
 		return
 	}
+	user, _ := controller.userService.GetByEmail(loginData.Email)
 
-	c.JSON(http.StatusOK, gin.H{"token": token, "expires_at": time.Now().Add(3 * time.Hour)})
+	c.JSON(http.StatusOK, gin.H{"token": token, "expires_at": time.Now().Add(3 * time.Hour), "user": user})
 }
 
 // GetDemographicInformation retrieves demographic information for a user
@@ -301,4 +302,33 @@ func (controller *UserController) GetByName(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, users)
+}
+
+// GetUserByEmail godoc
+// @Summary Get a user by email
+// @Description Retrieves a user by their email address from query parameters
+// @Tags users
+// @Accept  json
+// @Produce  json
+// @Param email query string true "Email Address"
+// @Success 200 {object} models.User
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/email [get]
+func (c *UserController) GetUserByEmail(ctx *gin.Context) {
+	email := ctx.Query("email") // Get email from query parameter
+
+	if email == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
+	}
+
+	user, err := c.userService.GetByEmail(email)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
 }

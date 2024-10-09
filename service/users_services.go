@@ -92,7 +92,7 @@ func (service *UserService) GetDemographicInformation(id string) (*models.User, 
 
 	// Obfuscate sensitive information
 	user.Password = ""
-	user.Email = ObfuscateEmail(user.Email)
+	user.Email = (user.Email)
 	return user, nil
 }
 
@@ -243,5 +243,27 @@ func (service *UserService) VerifyEmail(token string) error {
 
 // GetUsersByNamePrefix retrieves users whose names start with the given prefix (up to 10 users)
 func (s *UserService) GetUsersByNamePrefix(name string) ([]models.User, error) {
-	return s.userRepo.FindByNamePrefix(name)
+	users, err := s.userRepo.FindByNamePrefix(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the password to an empty string for each user
+	for i := range users {
+		users[i].Password = ""
+	}
+
+	return users, nil
+}
+
+func (s *UserService) GetByEmail(email string) (*models.User, error) {
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the password to an empty string
+	user.Password = ""
+
+	return user, nil
 }
