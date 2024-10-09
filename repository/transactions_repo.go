@@ -22,14 +22,17 @@ func (r *TransactionRepository) Create(transaction *models.Transaction) error {
 	return r.db.Create(transaction).Error
 }
 
-// GetByItemID retrieves transactions for a specific user
+// GetByProductID retrieves transactions for a specific item ID, ordered by created timestamp.
 func (r *TransactionRepository) GetByProductID(itemID uuid.UUID) ([]models.Transaction, error) {
 	var transactions []models.Transaction
-	if err := r.db.Where("item_id = ?", itemID).Find(&transactions).Error; err != nil {
+	if err := r.db.Where("item_id = ?", itemID).
+		Order("created_at DESC"). // Order by created_at in descending order
+		Find(&transactions).Error; err != nil {
 		return nil, err
 	}
 	return transactions, nil
 }
+
 func (r *TransactionRepository) GetByImageURLs(imageURLs []string) ([]models.Transaction, error) {
 	var transactions []models.Transaction
 	err := r.db.Where("image_url IN ?", imageURLs).Find(&transactions).Error
