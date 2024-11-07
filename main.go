@@ -4,7 +4,6 @@ import (
 	"backend/database"
 	"backend/routes"
 	"log"
-	"os"
 
 	_ "backend/docs" // Import the generated Swagger docs
 
@@ -63,7 +62,7 @@ func loadEnv() {
 // setupCORS configures CORS middleware for the Gin router
 func setupCORS(router *gin.Engine) {
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{os.Getenv("FE_PORT")},
+		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"GET,POST,PUT,DELETE,OPTIONS"},
 		AllowHeaders: []string{"Origin, Content-Type, Accept, Authorization"},
 	}))

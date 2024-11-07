@@ -364,6 +364,7 @@ func (controller *ProductController) populateAdditionalTransactionData(product *
 			ItemID:      transaction.ItemID,
 			Description: transaction.Description,
 			Action:      transaction.Action,
+			ImageURL:    transaction.ImageURL,
 			User:        *user, // Attach the user's demographic info
 		}
 

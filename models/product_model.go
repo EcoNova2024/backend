@@ -111,4 +111,5 @@ type DetailedTransaction struct {
 	User        User              `gorm:"foreignKey:UserID" json:"user"`
 	Description string            `gorm:"type:text" json:"description"` // Description of the transaction
 	Action      TransactionAction `gorm:"type:varchar(20);not null" json:"action"`
+	ImageURL    string            `gorm:"type:varchar(255)" json:"image_url"` // URL of the transaction image
 }
