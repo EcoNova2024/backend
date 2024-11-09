@@ -30,3 +30,7 @@ func (f *RepositoryFactory) GetUserRepository() *UserRepository {
 func (f *RepositoryFactory) GetTransactionRepository() *TransactionRepository {
 	return NewTransactionRepository(f.db)
 }
+
+func (f *RepositoryFactory) GetCommentRepository() *CommentRepository {
+	return NewCommentRepository(f.db)
+}

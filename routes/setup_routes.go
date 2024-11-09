@@ -1,4 +1,3 @@
-// backend/routes/setup_routes.go
 package routes
 
 import (
@@ -13,18 +12,20 @@ import (
 
 // SetupRoutes initializes the routes for the Gin router
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
-	// Create repositories
+	// Create repositories using the repository factory
 	repoFactory := repository.NewRepositoryFactory(db)
 	productRepo := repoFactory.GetProductRepository()
 	ratingRepo := repoFactory.GetRatingRepository()
 	userRepo := repoFactory.GetUserRepository()
 	transactionRepo := repoFactory.GetTransactionRepository()
+	commentRepo := repoFactory.GetCommentRepository() // Add comment repository
 
 	// Create services
 	productService := service.NewProductService(productRepo)
 	ratingService := service.NewRatingService(ratingRepo)
 	userService := service.NewUserService(userRepo)
 	transactionService := service.NewTransactionService(transactionRepo)
+	commentService := service.NewCommentService(commentRepo) // Create comment service
 
 	// Create controllers
 	productController := controller.NewProductController(productService, transactionService, userService, ratingService)
@@ -32,6 +33,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	userController := controller.NewUserController(userService)
 	homeController := controller.NewHomeController()
 	transactionController := controller.NewTransactionController(transactionService, productService)
+	commentController := controller.NewCommentController(commentService) // Initialize comment controller
 
 	// Define routes
 	router.GET("/", homeController.Index) // Home route
@@ -78,5 +80,13 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	transactions := router.Group("/transactions")
 	{
 		transactions.POST("/:item_id/", middleware.JWTAuth(), transactionController.AddTransactionToItem) // Add transaction to item
+	}
+
+	// Comment routes
+	comments := router.Group("/comments")
+	{
+		comments.POST("/", middleware.JWTAuth(), commentController.Create)      // Create comment
+		comments.GET("/product/:product_id", commentController.GetByProductID)  // Get comments by product
+		comments.DELETE("/:id", middleware.JWTAuth(), commentController.Delete) // Delete comment
 	}
 }

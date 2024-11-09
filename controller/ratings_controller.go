@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// RatingController handles HTTP requests related to ratings
 type RatingController struct {
 	ratingService *service.RatingService
 }

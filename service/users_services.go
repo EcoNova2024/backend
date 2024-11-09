@@ -129,16 +129,9 @@ func (service *UserService) SendPasswordResetEmail(email string) error {
 	}
 
 	// Create the reset link
-	resetLink := fmt.Sprintf("https://yourfrontend.com/reset-password?token=%s", resetToken)
+	resetLink := fmt.Sprintf("https://%s/verify-email?token=%s", os.Getenv("FE_PORT"), resetToken)
 
-	// Prepare email content
-	subject := "Password Reset Request"
-	body := fmt.Sprintf("To reset your password, click the following link: %s", resetLink)
-
-	// Send the email
-	if err = SendEmail(user.Email, subject, body); err != nil {
-		return errors.New("failed to send password reset email")
-	}
+	SendResetEmail(email, resetLink)
 
 	return nil
 }
@@ -159,14 +152,7 @@ func (service *UserService) SendEmailVerification(email string) error {
 	// Create verification link
 	verificationLink := fmt.Sprintf("https://%s/verify-email?token=%s", os.Getenv("FE_PORT"), verificationToken)
 
-	// Prepare email content
-	subject := "Email Verification"
-	body := fmt.Sprintf("Please verify your email by clicking the following link: %s", verificationLink)
-
-	// Send the email
-	if err = SendEmail(user.Email, subject, body); err != nil {
-		return errors.New("failed to send verification email")
-	}
+	SendVerifyEmail(email, verificationLink)
 
 	return nil
 }

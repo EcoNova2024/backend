@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net/smtp"
 	"os"
 	"strings"
 	"time"
@@ -80,39 +81,86 @@ func LoadEmailConfig() EmailConfig {
 	}
 }
 
-// SendEmail sends an email using the specified parameters
-func SendEmail(to string, subject string, body string) error {
-	/*
-		config := LoadEmailConfig()
+// SendEmail sends an HTML email
+func SendEmail(to, subject, htmlBody string) error {
+	config := LoadEmailConfig()
 
-		// Create the message
-		message := fmt.Sprintf("Subject: %s\r\n\r\n%s", subject, body)
+	// Create MIME headers for HTML email
+	headers := make(map[string]string)
+	headers["From"] = config.User
+	headers["To"] = to
+	headers["Subject"] = subject
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
 
-		// Set up authentication information.
-		auth := smtp.PlainAuth("", config.User, config.Password, config.Host)
+	// Format headers and body
+	message := ""
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + htmlBody
 
-		// Send the email
-		err := smtp.SendMail(config.Host+":"+config.Port, auth, config.User, []string{to}, []byte(message))
-		if err != nil {
-			return fmt.Errorf("failed to send email: %w", err)
-		}
-	*/
-	fmt.Print(body) // For testing purposes, print the body
+	// Set up authentication information
+	auth := smtp.PlainAuth("", config.User, config.Password, config.Host)
+
+	// Send the email
+	err := smtp.SendMail(config.Host+":"+config.Port, auth, config.User, []string{to}, []byte(message))
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	fmt.Println("Email sent successfully")
 	return nil
 }
 
-// SendVerificationEmail sends a verification email to the user
-func SendVerificationEmail(email, verificationLink string) error {
-	subject := "Email Verification"
-	body := fmt.Sprintf("Click the following link to verify your email: %s", verificationLink)
-	return SendEmail(email, subject, body)
+func SendVerifyEmail(email, verificationLink string) error {
+	subject := "Verify Your Email Address"
+	htmlBody := fmt.Sprintf(`
+        <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                <h2 style="text-align: center; color: #2c3e50;">Welcome to Our Community!</h2>
+                <p style="color: #555; line-height: 1.6;">
+                    Thank you for signing up. Please verify your email address by clicking the button below:
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email</a>
+                </div>
+                <p style="color: #555; line-height: 1.6;">
+                    If you did not create this account, you can safely ignore this email.
+                </p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="text-align: center; color: #aaa; font-size: 12px;">&copy; 2024 Renova, Inc. All rights reserved.</p>
+            </div>
+        </body>
+        </html>`, verificationLink)
+
+	return SendEmail(email, subject, htmlBody)
 }
 
-// SendPasswordResetEmail sends a password reset email to the user
-func SendPasswordResetEmail(email, resetLink string) error {
-	subject := "Password Reset"
-	body := fmt.Sprintf("Click the following link to reset your password: %s", resetLink)
-	return SendEmail(email, subject, body)
+func SendResetEmail(email, resetLink string) error {
+	subject := "Reset Your Password"
+	htmlBody := fmt.Sprintf(`
+        <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                <h2 style="text-align: center; color: #e74c3c;">Password Reset Request</h2>
+                <p style="color: #555; line-height: 1.6;">
+                    We received a request to reset your password. Click the button below to reset it:
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #e74c3c; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+                </div>
+                <p style="color: #555; line-height: 1.6;">
+                    If you did not request a password reset, you can ignore this email.
+                </p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="text-align: center; color: #aaa; font-size: 12px;">&copy; 2024 Renova, Inc. All rights reserved.</p>
+            </div>
+        </body>
+        </html>`, resetLink)
+
+	return SendEmail(email, subject, htmlBody)
 }
 
 // GeneratePasswordResetToken generates a JWT token for password reset
