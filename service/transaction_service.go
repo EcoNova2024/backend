@@ -24,14 +24,44 @@ func NewTransactionService(transactionRepo *repository.TransactionRepository) *T
 	return &TransactionService{transactionRepo: transactionRepo}
 }
 
-// Create a new transaction
-func (s *TransactionService) Create(transaction *models.Transaction) error {
-	return s.transactionRepo.Create(transaction)
+func (service *TransactionService) handleTransactionImage(transaction *models.Transaction) error {
+	// Check if the Transaction has an image URL
+	if transaction.ImageURL != "" {
+		// Construct the S3 object key for the Transaction's image
+		imageKey := fmt.Sprintf("images/%s", transaction.ImageURL)
+
+		// Use the GetImage utility to get the pre-signed URL
+		preSignedURL, err := GetImage(imageKey)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve image URL: %v", err)
+		}
+
+		// Replace the ImageURL with the pre-signed URL
+		transaction.ImageURL = preSignedURL
+	} else {
+		// If no image URL is provided, set it to an empty string
+		transaction.ImageURL = ""
+	}
+	return nil
 }
 
 // GetByUserID retrieves transactions for a specific user
 func (s *TransactionService) GetByProductID(itemID uuid.UUID) ([]models.Transaction, error) {
-	return s.transactionRepo.GetByProductID(itemID)
+	// Retrieve transactions for the specific item ID
+	transactions, err := s.transactionRepo.GetByProductID(itemID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch transactions: %v", err)
+	}
+
+	// Handle the image URL for each transaction
+	for i := range transactions {
+		err := s.handleTransactionImage(&transactions[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to handle image URL for transaction: %v", err)
+		}
+	}
+
+	return transactions, nil
 }
 
 // AddTransaction adds a transaction to a product
@@ -47,8 +77,14 @@ func (s *TransactionService) AddTransaction(req *models.TransactionRequest) (*mo
 		CreatedAt:   time.Now().UTC(), // Set CreatedAt to the current UTC time
 	}
 
+	// Handle the image URL for the transaction (generate a pre-signed URL if necessary)
+	err := s.handleTransactionImage(&transaction)
+	if err != nil {
+		return nil, fmt.Errorf("failed to handle image URL: %v", err)
+	}
+
 	// Save the transaction to the repository and return the transaction and any error
-	err := s.transactionRepo.Create(&transaction)
+	err = s.transactionRepo.Create(&transaction)
 	return &transaction, err
 }
 

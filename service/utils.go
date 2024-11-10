@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -166,4 +170,41 @@ func SendResetEmail(email, resetLink string) error {
 // GeneratePasswordResetToken generates a JWT token for password reset
 func GeneratePasswordResetToken(userID string) (string, error) {
 	return GenerateJWT(userID, "password_reset", time.Hour) // Token valid for 1 hour
+}
+func GetImage(imageKey string) (string, error) {
+	// Fetch AWS credentials and S3 bucket name from environment variables
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	region := os.Getenv("AWS_REGION")
+	bucket := os.Getenv("S3_BUCKET_NAME")
+
+	if accessKey == "" || secretKey == "" || region == "" || bucket == "" {
+		return "", fmt.Errorf("missing AWS credentials or configuration")
+	}
+
+	// Create a new AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(region),
+		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create AWS session: %v", err)
+	}
+
+	// Initialize the S3 client
+	s3Client := s3.New(sess)
+
+	// Generate a pre-signed URL for the user's image
+	req, _ := s3Client.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(imageKey),
+	})
+
+	// Set the expiration for the pre-signed URL (e.g., 15 minutes)
+	urlStr, err := req.Presign(15 * time.Minute)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate pre-signed URL for image: %v", err)
+	}
+
+	return urlStr, nil
 }

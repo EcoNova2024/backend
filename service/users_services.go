@@ -1,4 +1,3 @@
-// backend/service/user_service.go
 package service
 
 import (
@@ -38,6 +37,28 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
+// Handle image settings (pre-signed URL generation and image URL updates)
+func (service *UserService) handleImage(user *models.User) error {
+	// Check if an image URL exists and generate a pre-signed URL if needed
+	if user.ImageURL != "" {
+		// Construct the S3 object key for the user's image
+		imageKey := fmt.Sprintf("users/%s", user.ImageURL)
+
+		// Use the GetImage utility to get the pre-signed URL
+		preSignedURL, err := GetImage(imageKey)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve image URL: %v", err)
+		}
+
+		// Replace the ImageURL with the pre-signed URL
+		user.ImageURL = preSignedURL
+	} else {
+		// If no image URL is provided, set it to an empty string
+		user.ImageURL = ""
+	}
+	return nil
+}
+
 func (service *UserService) Create(req *models.SignUp) error {
 	// Create a new user with the provided information
 	user := &models.User{
@@ -60,7 +81,8 @@ func (service *UserService) Create(req *models.SignUp) error {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return nil
+	// Handle image settings (generate pre-signed URL if image exists)
+	return service.handleImage(user)
 }
 
 func (service *UserService) Authenticate(email, password string) (string, error) {
@@ -85,14 +107,22 @@ func (service *UserService) Authenticate(email, password string) (string, error)
 }
 
 func (service *UserService) GetDemographicInformation(id string) (*models.User, error) {
+	// Fetch user by ID from the repository
 	user, err := service.userRepo.GetByID(id)
 	if err != nil {
 		return nil, ErrUserNotFound
 	}
 
 	// Obfuscate sensitive information
-	user.Password = ""
-	user.Email = (user.Email)
+	user.Password = ""                      // Clear password
+	user.Email = ObfuscateEmail(user.Email) // Optional email obfuscation
+
+	// Handle image settings (generate pre-signed URL if image exists)
+	if err := service.handleImage(user); err != nil {
+		return nil, fmt.Errorf("failed to handle image settings: %v", err)
+	}
+
+	// Return the user object with the pre-signed URL (if available)
 	return user, nil
 }
 
@@ -108,7 +138,12 @@ func (service *UserService) UpdateUser(userID string, req *models.UpdateUser) er
 	user.ImageURL = req.NewImage
 
 	// Persist updated user data
-	return service.userRepo.Update(userID, user)
+	if err := service.userRepo.Update(userID, user); err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	// Handle image settings (generate pre-signed URL if image exists)
+	return service.handleImage(user)
 }
 
 func (service *UserService) UpdateEmail(userID, newEmail string) error {
@@ -239,6 +274,13 @@ func (s *UserService) GetUsersByNamePrefix(name string) ([]models.User, error) {
 		users[i].Password = ""
 	}
 
+	// Handle image settings (generate pre-signed URL if image exists)
+	for i := range users {
+		if err := s.handleImage(&users[i]); err != nil {
+			return nil, fmt.Errorf("failed to handle image for user %s: %v", users[i].ID, err)
+		}
+	}
+
 	return users, nil
 }
 
@@ -250,6 +292,11 @@ func (s *UserService) GetByEmail(email string) (*models.User, error) {
 
 	// Set the password to an empty string
 	user.Password = ""
+
+	// Handle image settings (generate pre-signed URL if image exists)
+	if err := s.handleImage(user); err != nil {
+		return nil, fmt.Errorf("failed to handle image for user %s: %v", user.ID, err)
+	}
 
 	return user, nil
 }
