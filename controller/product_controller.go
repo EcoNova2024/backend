@@ -5,6 +5,7 @@ import (
 	"backend/service"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -197,11 +198,13 @@ func (controller *ProductController) GetContentBased(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }
 
-// GetProductsByUserID retrieves products by user ID
-// @Summary Get products by user ID
-// @Tags         Products
-// @Description Get all products for a specific user
+// GetProductsByUserID retrieves products by user ID with pagination
+// @Summary Get products by user ID with pagination
+// @Tags Products
+// @Description Get all products for a specific user with pagination support
 // @Param user_id query string true "User ID"
+// @Param count   query int    true "Number of products per page"
+// @Param page    query int    true "Page number"
 // @Success 200 {array} models.ProductResponse
 // @Router /products/user [get]
 func (controller *ProductController) GetProductsByUserID(c *gin.Context) {
@@ -217,7 +220,21 @@ func (controller *ProductController) GetProductsByUserID(c *gin.Context) {
 		return
 	}
 
-	products, err := controller.productService.GetProductsByUserID(userID)
+	// Get pagination parameters
+	count, err := strconv.Atoi(c.DefaultQuery("count", "10")) // Default to 10 if not provided
+	if err != nil || count <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid count value"})
+		return
+	}
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1")) // Default to 1 if not provided
+	if err != nil || page <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page value"})
+		return
+	}
+
+	// Call the service to get products with pagination
+	products, err := controller.productService.GetProductsByUserID(userID, count, page)
 	if err != nil {
 		log.Printf("GetProductsByUserID: service error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user products"})
@@ -235,6 +252,7 @@ func (controller *ProductController) GetProductsByUserID(c *gin.Context) {
 		productResponses = append(productResponses, productResponse)
 	}
 
+	// Return the paginated products
 	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }
 
@@ -312,34 +330,58 @@ func (controller *ProductController) GetRandomProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }
 
-// GetRestoredProducts retrieves products with the status "restored"
-// @Summary Get restored products
+// GetProductsByStatus retrieves products by a specified status with pagination
+// @Summary Get products by status
 // @Tags         Products
-// @Description Retrieve products with the status "restored"
-// @Success 200 {array} models.ProductResponse
-// @Router /products/restored [get]
-func (controller *ProductController) GetRestoredProducts(c *gin.Context) {
-	// Fetch restored products from the product service
-	products, err := controller.productService.GetRestoredProducts()
-	if err != nil {
-		log.Printf("GetRestoredProducts: failed to fetch restored products: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve restored products"})
+// @Description Retrieve products by the specified status with pagination
+// @Param        status  query string true  "Product status (e.g., restored, active, archived)"
+// @Param        limit   query int    false "Number of products per page"
+// @Param        page    query int    false "Page number"
+// @Success 200  {array} models.ProductResponse
+// @Router /products/status [get]
+func (controller *ProductController) GetProductsByStatus(c *gin.Context) {
+	// Retrieve the status parameter from the query string
+	status := c.Query("status")
+	if status == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status parameter is required"})
 		return
 	}
 
+	// Parse pagination parameters from the query
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+
+	// Fetch products by status with pagination
+	products, err := controller.productService.GetProductsByStatusPaginated(status, limit, offset)
+	if err != nil {
+		log.Printf("GetProductsByStatus: failed to fetch products by status '%s': %v", status, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve products"})
+		return
+	}
+
+	// Populate additional data and convert to ProductResponse
 	var productResponses []models.ProductResponse
 	for _, product := range products {
 		productResponse, err := controller.populateAdditionalProductData(&product)
 		if err != nil {
-			log.Printf("GetRestoredProducts: failed to fetch additional data for product %s: %v", product.ID.String(), err)
+			log.Printf("GetProductsByStatus: failed to fetch additional data for product %s: %v", product.ID.String(), err)
 			continue // Skip to the next product if there's an error
 		}
-
 		productResponses = append(productResponses, productResponse)
 	}
 
+	// Respond with the paginated products
 	c.JSON(http.StatusOK, gin.H{"products": productResponses})
 }
+
 func (controller *ProductController) populateAdditionalTransactionData(product *models.ProductResponse) (models.DetailedProductResponse, error) {
 	var productRes models.DetailedProductResponse
 
@@ -460,4 +502,55 @@ func (controller *ProductController) GetRatedProductsByUserID(c *gin.Context) {
 
 	// Return the list of rated products
 	c.JSON(http.StatusOK, ratedProducts)
+}
+
+// GetPaginatedRandomProducts retrieves random products with pagination
+// @Summary Get paginated random products
+// @Tags         Products
+// @Description Retrieve random products for unauthenticated users with pagination support
+// @Param        count  query   int  true   "Number of products per page"
+// @Param        page   query   int  true   "Page number"
+// @Success 200 {array} models.ProductResponse
+// @Router /products/random/paginated [get]
+func (controller *ProductController) GetPaginatedRandomProducts(c *gin.Context) {
+	// Get 'count' and 'page' query parameters from the request, with defaults if not specified
+	count, err := strconv.Atoi(c.DefaultQuery("count", "10")) // Default to 10 products per page
+	if err != nil || count <= 0 {
+		count = 10
+	}
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1")) // Default to the first page
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	// Calculate the offset for pagination
+	offset := (page - 1) * count
+
+	// Fetch random paginated products from the product service
+	products, err := controller.productService.GetRandomProductsPaginated(count, offset)
+	if err != nil {
+		log.Printf("GetPaginatedRandomProducts: failed to fetch random products: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve random products"})
+		return
+	}
+
+	// Populate additional product data
+	var productResponses []models.ProductResponse
+	for _, product := range products {
+		productResponse, err := controller.populateAdditionalProductData(&product)
+		if err != nil {
+			log.Printf("GetPaginatedRandomProducts: failed to fetch additional data for product %s: %v", product.ID.String(), err)
+			continue // Skip to the next product if there's an error
+		}
+		productResponses = append(productResponses, productResponse)
+	}
+
+	// Send the paginated products in the response
+	c.JSON(http.StatusOK, gin.H{
+		"products": productResponses,
+		"page":     page,
+		"count":    count,
+		"total":    len(products), // Total products in the current page
+	})
 }

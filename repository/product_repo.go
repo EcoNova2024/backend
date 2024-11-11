@@ -64,20 +64,50 @@ func (r *ProductRepository) GetRandomProducts() ([]models.Product, error) {
 	return products, nil
 }
 
-// GetProductsByUserID retrieves products for a specific user by their UUID
-func (r *ProductRepository) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
+// GetProductsByUserID retrieves products for a specific user by their UUID with pagination
+func (r *ProductRepository) GetProductsByUserID(userID uuid.UUID, count, offset int) ([]models.Product, error) {
 	var products []models.Product
-	if err := r.db.Where("user_id = ?", userID).Find(&products).Error; err != nil {
+	// Add limit and offset for pagination
+	if err := r.db.Where("user_id = ?", userID).Limit(count).Offset(offset).Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil
 }
 
-// GetByStatus retrieves 10 random products by their status
-func (r *ProductRepository) GetByStatus(status string) ([]models.Product, error) {
+// GetByStatus retrieves 10 random products by their status// GetByStatusPaginated retrieves products by any given status with pagination
+func (repo *ProductRepository) GetByStatusPaginated(status string, limit int, offset int) ([]models.Product, error) {
 	var products []models.Product
-	if err := r.db.Where("status = ?", status).Order("RAND()").Limit(10).Find(&products).Error; err != nil {
+
+	// Query to fetch products by status with pagination
+	err := repo.db.
+		Where("status = ?", status). // Filter by the specified status
+		Order("created_at DESC").    // Order by CreatedAt in descending order
+		Limit(limit).                // Limit results for pagination
+		Offset(offset).              // Start from the specified offset
+		Find(&products).             // Execute query
+		Error
+
+	if err != nil {
 		return nil, err
 	}
+
+	return products, nil
+}
+
+func (repo *ProductRepository) GetRandomProductsPaginated(count int, offset int) ([]models.Product, error) {
+	var products []models.Product
+
+	// Query to fetch random products with pagination, ordered by CreatedAt
+	err := repo.db.
+		Order("created_at DESC"). // Ensure they're ordered by CreatedAt descending
+		Limit(count).             // Limit the results to the count
+		Offset(offset).           // Start from the specified offset
+		Find(&products).          // Perform the query and load results into products
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
 	return products, nil
 }

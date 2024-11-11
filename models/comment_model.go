@@ -27,3 +27,11 @@ func (r *Comment) BeforeCreate(tx *gorm.DB) (err error) {
 	r.ID = uuid.New() // Automatically generate a new UUID for the Comment ID
 	return
 }
+
+type CommentResponse struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	User      User      `gorm:"foreignKey:UserID" json:"user"`
+	ProductID uuid.UUID `gorm:"type:uuid;not null" json:"product_id"`
+	Content   string    `gorm:"type:text;not null" json:"content"` // Changed to Content (text)
+	CreatedAt time.Time `gorm:"default:current_timestamp" json:"created_at"`
+}

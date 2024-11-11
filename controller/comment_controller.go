@@ -12,12 +12,16 @@ import (
 
 // CommentController handles HTTP requests related to comments
 type CommentController struct {
-	commentService service.CommentService // Use the interface, not the concrete type pointer
+	commentService service.CommentService
+	userService    service.UserService
 }
 
 // NewCommentController creates a new CommentController instance
-func NewCommentController(commentService service.CommentService) *CommentController {
-	return &CommentController{commentService: commentService}
+func NewCommentController(commentService service.CommentService, userService service.UserService) *CommentController {
+	return &CommentController{
+		commentService: commentService,
+		userService:    userService,
+	}
 }
 
 // Create handles the creation of a new comment
@@ -37,7 +41,7 @@ func (controller *CommentController) Create(c *gin.Context) {
 		return
 	}
 
-	// Get user_id from locals (assuming it's set in middleware)
+	// Get user_id from context (assumed to be set by middleware)
 	userID, exists := c.Get("user_id")
 	if !exists {
 		log.Println("User ID not found in request")
@@ -67,14 +71,14 @@ func (controller *CommentController) Create(c *gin.Context) {
 func (controller *CommentController) Delete(c *gin.Context) {
 	// Extract the comment ID from the URL parameters
 	idParam := c.Param("id")
-	id, err := uuid.Parse(idParam) // Parse the comment ID
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		log.Printf("Invalid comment UUID: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
 		return
 	}
 
-	// Get user_id from JWT middleware (which is likely stored as a string)
+	// Get user_id from context
 	userIDStr, exists := c.Get("user_id")
 	if !exists {
 		log.Println("User ID not found in request")
@@ -82,7 +86,7 @@ func (controller *CommentController) Delete(c *gin.Context) {
 		return
 	}
 
-	// Convert userID string from context into uuid.UUID
+	// Parse user ID to uuid.UUID
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		log.Printf("Invalid user UUID: %v", err)
@@ -105,7 +109,7 @@ func (controller *CommentController) Delete(c *gin.Context) {
 		return
 	}
 
-	// Proceed to delete the comment if the user is authorized
+	// Proceed to delete the comment
 	if err := controller.commentService.Delete(id); err != nil {
 		log.Printf("Error deleting comment: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete comment", "details": err.Error()})
@@ -115,14 +119,14 @@ func (controller *CommentController) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Comment deleted successfully"})
 }
 
-// GetByProductID handles retrieving all comments by product ID
+// GetByProductID retrieves all comments for a specific product, with user demographic information
 // @Summary      Get comments by product ID
-// @Description  Retrieves all comments for a specific product
+// @Description  Retrieves all comments for a specific product, with user demographic information
 // @Tags         Comments
 // @Accept       json
 // @Produce      json
 // @Param        product_id   path    string  true   "Product ID"
-// @Success      200          {array} models.Comment
+// @Success      200          {array} models.CommentResponse
 // @Router       /comments/product/{product_id} [get]
 func (controller *CommentController) GetByProductID(c *gin.Context) {
 	productIDParam := c.Param("product_id")
@@ -133,6 +137,7 @@ func (controller *CommentController) GetByProductID(c *gin.Context) {
 		return
 	}
 
+	// Retrieve basic comments without User details from the service
 	comments, err := controller.commentService.GetByProductID(productID)
 	if err != nil {
 		log.Printf("Error retrieving comments: %v", err)
@@ -140,5 +145,31 @@ func (controller *CommentController) GetByProductID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"comments": comments})
+	// Create a slice to hold comments with full user details
+	var commentsWithUserDetails []models.CommentResponse
+
+	for _, comment := range comments {
+		// Fetch demographic information for each user associated with a comment
+		user, err := controller.userService.GetDemographicInformation(comment.UserID.String())
+		if err != nil {
+			log.Printf("Error fetching user demographic information: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user information", "details": err.Error()})
+			return
+		}
+
+		// Create a CommentResponse with the User information
+		commentResponse := models.CommentResponse{
+			ID:        comment.ID,
+			User:      *user, // Populate the user information here
+			ProductID: comment.ProductID,
+			Content:   comment.Content,
+			CreatedAt: comment.CreatedAt,
+		}
+
+		// Append to the list of comment responses
+		commentsWithUserDetails = append(commentsWithUserDetails, commentResponse)
+	}
+
+	// Return the list of comments with user demographic information
+	c.JSON(http.StatusOK, gin.H{"comments": commentsWithUserDetails})
 }

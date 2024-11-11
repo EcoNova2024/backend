@@ -139,9 +139,13 @@ func (s *ProductService) GetRandomProducts() ([]models.Product, error) {
 	return s.productRepo.GetRandomProducts()
 }
 
-// This is business logic that might filter or modify results before returning them.
-func (s *ProductService) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
-	products, err := s.productRepo.GetProductsByUserID(userID)
+// GetProductsByUserID retrieves products for a specific user by their UUID with pagination
+func (s *ProductService) GetProductsByUserID(userID uuid.UUID, count, page int) ([]models.Product, error) {
+	// Calculate offset based on page and count
+	offset := (page - 1) * count
+
+	// Call the repository method with pagination parameters
+	products, err := s.productRepo.GetProductsByUserID(userID, count, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +165,18 @@ func (s *ProductService) UpdateStatus(productID uuid.UUID, status models.Product
 	return s.productRepo.Update(product)
 }
 
-// GetRestoredProducts retrieves products with the status "restored"
-func (s *ProductService) GetRestoredProducts() ([]models.Product, error) {
-	// Assuming the repository has a method to get products by status
-	return s.productRepo.GetByStatus("restored")
+// GetRestoredProducts retrieves products with the status "restored"// GetProductsByStatusPaginated fetches products by the specified status with pagination
+func (s *ProductService) GetProductsByStatusPaginated(status string, limit int, offset int) ([]models.Product, error) {
+	// Call repository method to get products by status with pagination
+	return s.productRepo.GetByStatusPaginated(status, limit, offset)
+}
+
+func (s *ProductService) GetRandomProductsPaginated(count int, offset int) ([]models.Product, error) {
+	// Call the repository function to get random products with pagination
+	products, err := s.productRepo.GetRandomProductsPaginated(count, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }

@@ -44,6 +44,20 @@ definitions:
       user_id:
         type: string
     type: object
+  models.CommentResponse:
+    properties:
+      content:
+        description: Changed to Content (text)
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
   models.DetailedProductResponse:
     properties:
       category:
@@ -369,7 +383,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieves all comments for a specific product
+      description: Retrieves all comments for a specific product, with user demographic
+        information
       parameters:
       - description: Product ID
         in: path
@@ -383,7 +398,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Comment'
+              $ref: '#/definitions/models.CommentResponse'
             type: array
       summary: Get comments by product ID
       tags:
@@ -472,6 +487,31 @@ paths:
       summary: Get random products
       tags:
       - Products
+  /products/random/paginated:
+    get:
+      description: Retrieve random products for unauthenticated users with pagination
+        support
+      parameters:
+      - description: Number of products per page
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Page number
+        in: query
+        name: page
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ProductResponse'
+            type: array
+      summary: Get paginated random products
+      tags:
+      - Products
   /products/rated:
     get:
       consumes:
@@ -495,9 +535,23 @@ paths:
       summary: Get rated products by user ID
       tags:
       - Products
-  /products/restored:
+  /products/status:
     get:
-      description: Retrieve products with the status "restored"
+      description: Retrieve products by the specified status with pagination
+      parameters:
+      - description: Product status (e.g., restored, active, archived)
+        in: query
+        name: status
+        required: true
+        type: string
+      - description: Number of products per page
+        in: query
+        name: limit
+        type: integer
+      - description: Page number
+        in: query
+        name: page
+        type: integer
       responses:
         "200":
           description: OK
@@ -505,18 +559,28 @@ paths:
             items:
               $ref: '#/definitions/models.ProductResponse'
             type: array
-      summary: Get restored products
+      summary: Get products by status
       tags:
       - Products
   /products/user:
     get:
-      description: Get all products for a specific user
+      description: Get all products for a specific user with pagination support
       parameters:
       - description: User ID
         in: query
         name: user_id
         required: true
         type: string
+      - description: Number of products per page
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Page number
+        in: query
+        name: page
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -524,7 +588,7 @@ paths:
             items:
               $ref: '#/definitions/models.ProductResponse'
             type: array
-      summary: Get products by user ID
+      summary: Get products by user ID with pagination
       tags:
       - Products
   /ratings:

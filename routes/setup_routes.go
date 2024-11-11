@@ -33,7 +33,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	userController := controller.NewUserController(userService)
 	homeController := controller.NewHomeController()
 	transactionController := controller.NewTransactionController(transactionService, productService)
-	commentController := controller.NewCommentController(commentService) // Initialize comment controller
+	commentController := controller.NewCommentController(commentService, *userService)
 
 	// Define routes
 	router.GET("/", homeController.Index) // Home route
@@ -62,9 +62,10 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		products.GET("/user", productController.GetProductsByUserID)                             // Get products by user ID (from JWT)
 		products.GET("/content-based", productController.GetContentBased)                        // Get content-based recommendations
 		products.GET("/collaborative", middleware.JWTAuth(), productController.GetCollaborative) // Get collaborative-based recommendations
-		products.GET("/restored", productController.GetRestoredProducts)                         // Get restored products
+		products.GET("/status", productController.GetProductsByStatus)                           // Get restored products
 		products.GET("/random", productController.GetRandomProducts)                             // Get random products
 		products.GET("/rated", productController.GetRatedProductsByUserID)
+		products.GET("/random/paginated", productController.GetPaginatedRandomProducts)
 	}
 
 	// Rating routes

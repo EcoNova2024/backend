@@ -51,7 +51,7 @@ const docTemplate = `{
         },
         "/comments/product/{product_id}": {
             "get": {
-                "description": "Retrieves all comments for a specific product",
+                "description": "Retrieves all comments for a specific product, with user demographic information",
                 "consumes": [
                     "application/json"
                 ],
@@ -77,7 +77,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Comment"
+                                "$ref": "#/definitions/models.CommentResponse"
                             }
                         }
                     }
@@ -236,6 +236,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/products/random/paginated": {
+            "get": {
+                "description": "Retrieve random products for unauthenticated users with pagination support",
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get paginated random products",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of products per page",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ProductResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/products/rated": {
             "get": {
                 "description": "Fetches a list of products rated by the specified user",
@@ -271,13 +307,34 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/restored": {
+        "/products/status": {
             "get": {
-                "description": "Retrieve products with the status \"restored\"",
+                "description": "Retrieve products by the specified status with pagination",
                 "tags": [
                     "Products"
                 ],
-                "summary": "Get restored products",
+                "summary": "Get products by status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product status (e.g., restored, active, archived)",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of products per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -293,16 +350,30 @@ const docTemplate = `{
         },
         "/products/user": {
             "get": {
-                "description": "Get all products for a specific user",
+                "description": "Get all products for a specific user with pagination support",
                 "tags": [
                     "Products"
                 ],
-                "summary": "Get products by user ID",
+                "summary": "Get products by user ID with pagination",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "User ID",
                         "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of products per page",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
                         "in": "query",
                         "required": true
                     }
@@ -1168,6 +1239,27 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.CommentResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "Changed to Content (text)",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "product_id": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },
