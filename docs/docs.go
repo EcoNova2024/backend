@@ -630,7 +630,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Get a user by email",
                 "parameters": [
@@ -1211,8 +1211,8 @@ const docTemplate = `{
                     "description": "Description of the transaction",
                     "type": "string"
                 },
-                "image_url": {
-                    "description": "URL of the transaction image",
+                "image_data": {
+                    "description": "Base64 encoded image data for the transaction",
                     "type": "string"
                 },
                 "price": {
@@ -1375,8 +1375,8 @@ const docTemplate = `{
                     "description": "Description of the product",
                     "type": "string"
                 },
-                "image_url": {
-                    "description": "URL of the transaction image",
+                "image_data": {
+                    "description": "Base64 encoded image data for the transaction",
                     "type": "string"
                 },
                 "name": {
@@ -1473,11 +1473,13 @@ const docTemplate = `{
             "enum": [
                 "available",
                 "restored",
+                "restoredAvailable",
                 "sold"
             ],
             "x-enum-varnames": [
                 "StatusAvailable",
                 "StatusRestored",
+                "StatusRestoredAvailable",
                 "StatusSold"
             ]
         },

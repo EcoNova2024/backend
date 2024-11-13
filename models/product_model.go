@@ -10,9 +10,10 @@ import (
 type ProductStatus string
 
 const (
-	StatusAvailable ProductStatus = "available"
-	StatusRestored  ProductStatus = "restored"
-	StatusSold      ProductStatus = "sold"
+	StatusAvailable         ProductStatus = "available"
+	StatusRestored          ProductStatus = "restored"
+	StatusRestoredAvailable ProductStatus = "restoredAvailable"
+	StatusSold              ProductStatus = "sold"
 )
 
 type Product struct {
@@ -46,14 +47,14 @@ type ProductResponse struct {
 
 // ProductRequest is used when creating a new product, without including transactions.
 type ProductRequest struct {
-	UserID      uuid.UUID     `json:"user_id"`                            // ID of the user creating the product
-	Name        string        `json:"name"`                               // Name of the product
-	Description string        `json:"description"`                        // Description of the product
-	Price       float64       `json:"price"`                              // Price of the product
-	SubCategory string        `json:"sub_category"`                       // Subcategory of the product
-	Category    string        `json:"category"`                           // Category of the product
-	Status      ProductStatus `json:"status,omitempty"`                   // Status of the product (optional during request)
-	ImageURL    string        `gorm:"type:varchar(255)" json:"image_url"` // URL of the transaction image
+	UserID      uuid.UUID     `json:"user_id"`             // ID of the user creating the product
+	Name        string        `json:"name"`                // Name of the product
+	Description string        `json:"description"`         // Description of the product
+	Price       float64       `json:"price"`               // Price of the product
+	SubCategory string        `json:"sub_category"`        // Subcategory of the product
+	Category    string        `json:"category"`            // Category of the product
+	Status      ProductStatus `json:"status,omitempty"`    // Status of the product (optional during request)
+	ImageData   string        `gorm:"-" json:"image_data"` // Base64 encoded image data for the transaction
 }
 
 // Transaction defines the structure for a transaction involving a product.
@@ -76,19 +77,23 @@ const (
 	Sold        TransactionAction = "sold"
 )
 
+// TransactionRequest defines the fields for creating a transaction with optional image data
 type TransactionRequest struct {
 	ItemID      uuid.UUID         `gorm:"type:uuid;not null" json:"item_id"`       // Reference to the product involved in the transaction
 	UserID      uuid.UUID         `gorm:"type:uuid;not null" json:"user_id"`       // Reference to the user performing the transaction
 	Description string            `gorm:"type:text" json:"description"`            // Description of the transaction
 	Action      TransactionAction `gorm:"type:varchar(20);not null" json:"action"` // Action type of the transaction
-	ImageURL    string            `gorm:"type:varchar(255)" json:"image_url"`      // URL of the transaction image
+	ImageData   string            `gorm:"-" json:"image_data"`                     // Base64 encoded image data for the transaction
 }
+
+// AddTransactionRequest is used to add a transaction with optional image data
 type AddTransactionRequest struct {
 	Description string            `gorm:"type:text" json:"description"`            // Description of the transaction
 	Action      TransactionAction `gorm:"type:varchar(20);not null" json:"action"` // Action type of the transaction
-	ImageURL    string            `gorm:"type:varchar(255)" json:"image_url"`      // URL of the transaction image
+	ImageData   string            `gorm:"-" json:"image_data"`                     // Base64 encoded image data for the transaction
 	Price       float64           `gorm:"type:float64" json:"price"`               // Price of the transaction
 }
+
 type DetailedProductResponse struct {
 	ID            uuid.UUID             `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primary_key"` // Product ID
 	User          uuid.UUID             `gorm:"type:uuid;not null" json:"user_id"`                          // Associated user (owner of the product)

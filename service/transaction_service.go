@@ -4,8 +4,10 @@ import (
 	"backend/models"
 	"backend/repository"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -66,6 +68,9 @@ func (s *TransactionService) GetByProductID(itemID uuid.UUID) ([]models.Transact
 
 // AddTransaction adds a transaction to a product
 func (s *TransactionService) AddTransaction(req *models.TransactionRequest) (*models.Transaction, error) {
+	// Log the start of the AddTransaction process
+	log.Printf("Adding transaction for ItemID: %s, UserID: %s", req.ItemID, req.UserID)
+
 	// Create a new Transaction object
 	transaction := models.Transaction{
 		ID:          uuid.New(),       // Generate a new UUID for the transaction
@@ -73,19 +78,69 @@ func (s *TransactionService) AddTransaction(req *models.TransactionRequest) (*mo
 		UserID:      req.UserID,       // Use the UserID from the request
 		Description: req.Description,  // Use the Description from the request
 		Action:      req.Action,       // Use the Action from the request (TransactionAction type)
-		ImageURL:    req.ImageURL,     // Use the ImageURL from the request
 		CreatedAt:   time.Now().UTC(), // Set CreatedAt to the current UTC time
 	}
 
-	// Handle the image URL for the transaction (generate a pre-signed URL if necessary)
-	err := s.handleTransactionImage(&transaction)
+	// Log transaction creation
+	log.Printf("Created new transaction with ID: %s", transaction.ID)
+
+	// Handle the image URL for the transaction (upload image and set pre-signed URL if necessary)
+	err := s.handleTransactionPutImage(&transaction, req)
 	if err != nil {
+		log.Printf("Error handling image for transaction ID %s: %v", transaction.ID, err)
 		return nil, fmt.Errorf("failed to handle image URL: %v", err)
 	}
 
-	// Save the transaction to the repository and return the transaction and any error
+	// Save the transaction to the repository
 	err = s.transactionRepo.Create(&transaction)
-	return &transaction, err
+	if err != nil {
+		log.Printf("Error saving transaction ID %s to the repository: %v", transaction.ID, err)
+		return nil, fmt.Errorf("failed to save transaction: %v", err)
+	}
+
+	// Log success
+	log.Printf("Successfully added transaction with ID: %s", transaction.ID)
+
+	// Return the transaction
+	return &transaction, nil
+}
+
+// handleTransactionPutImage decodes and uploads an image if present in req.ImageData
+func (s *TransactionService) handleTransactionPutImage(transaction *models.Transaction, req *models.TransactionRequest) error {
+	// Log the image handling process
+	log.Printf("Handling image for transaction ID: %s", transaction.ID)
+
+	// Check if ImageData contains base64-encoded image data
+	if req.ImageData != "" {
+		// Log that image data is provided
+		log.Printf("Image data found for transaction ID: %s", transaction.ID)
+
+		// Decode the base64-encoded image data
+		imageData, err := base64.StdEncoding.DecodeString(req.ImageData)
+		if err != nil {
+			log.Printf("Error decoding base64 image data for transaction ID %s: %v", transaction.ID, err)
+			return fmt.Errorf("failed to decode image data: %v", err)
+		}
+
+		// Generate a unique key for the image based on the transaction ID
+		imageKey := fmt.Sprintf("%s.jpg", transaction.ID.String())
+
+		// Log image key generation
+		log.Printf("Generated image key for transaction ID %s: %s", transaction.ID, imageKey)
+
+		// Upload the image using the S3 service's PutImage method and get a pre-signed URL
+		imageURL, err := PutImage("images/"+imageKey, imageData)
+		if err != nil {
+			log.Printf("Error uploading image for transaction ID %s: %v", transaction.ID, err)
+			return fmt.Errorf("failed to upload image: %v", err)
+		}
+
+		// Set the transaction's ImageURL to the pre-signed URL returned by PutImage
+		transaction.ImageURL = imageKey
+		log.Printf("Successfully uploaded image for transaction ID %s, URL: %s", transaction.ID, imageURL)
+	}
+
+	return nil
 }
 
 // FetchContentBasedRecommendations retrieves products based on content filtering (mock implementation)

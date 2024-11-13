@@ -307,7 +307,7 @@ func (controller *UserController) GetByName(c *gin.Context) {
 // GetUserByEmail godoc
 // @Summary Get a user by email
 // @Description Retrieves a user by their email address from query parameters
-// @Tags users
+// @Tags Users
 // @Accept  json
 // @Produce  json
 // @Param email query string true "Email Address"

@@ -1,9 +1,12 @@
 package service
 
 import (
+	"bytes"
 	"fmt"
+	"mime"
 	"net/smtp"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -195,6 +198,62 @@ func GetImage(imageKey string) (string, error) {
 	s3Client := s3.New(sess)
 
 	// Generate a pre-signed URL for the user's image
+	req, _ := s3Client.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(imageKey),
+	})
+
+	// Set the expiration for the pre-signed URL (e.g., 15 minutes)
+	urlStr, err := req.Presign(15 * time.Minute)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate pre-signed URL for image: %v", err)
+	}
+
+	return urlStr, nil
+}
+func PutImage(imageKey string, imageData []byte) (string, error) {
+	// Fetch AWS credentials and S3 bucket name from environment variables
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	region := os.Getenv("AWS_REGION")
+	bucket := os.Getenv("S3_BUCKET_NAME")
+
+	if accessKey == "" || secretKey == "" || region == "" || bucket == "" {
+		return "", fmt.Errorf("missing AWS credentials or configuration")
+	}
+
+	// Create a new AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(region),
+		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create AWS session: %v", err)
+	}
+
+	// Determine content type based on the file extension of imageKey
+	ext := filepath.Ext(imageKey)
+	mimeType := mime.TypeByExtension(ext)
+	if mimeType == "" {
+		// Default to binary stream if the MIME type cannot be determined
+		mimeType = "application/octet-stream"
+	}
+
+	// Initialize the S3 client
+	s3Client := s3.New(sess)
+
+	// Upload the image to S3 using imageKey as the unique object key in the bucket
+	_, err = s3Client.PutObject(&s3.PutObjectInput{
+		Bucket:      aws.String(bucket),
+		Key:         aws.String(imageKey),
+		Body:        bytes.NewReader(imageData),
+		ContentType: aws.String(mimeType),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload image to S3: %v", err)
+	}
+
+	// Generate a pre-signed URL for the uploaded image
 	req, _ := s3Client.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(imageKey),

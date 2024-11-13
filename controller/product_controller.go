@@ -29,13 +29,13 @@ func NewProductController(productService *service.ProductService, transactionSer
 	}
 }
 
-// Create handles the creation of a new product
-// @Summary      Create a new product
-// @Description  Create a new product with the given details
+// @Summary      Create a new product with image
+// @Description  Create a new product with the given details, including Base64-encoded image data
 // @Tags         Products
 // @Accept       json
 // @Produce      json
 // @Param        product  body      models.ProductRequest  true  "Product data"
+// @Param        image_data  body   string                  true  "Base64 encoded image data"
 // @Success      201      {object}  models.ProductResponse
 // @Router       /products [post]
 func (controller *ProductController) Create(c *gin.Context) {
@@ -70,7 +70,7 @@ func (controller *ProductController) Create(c *gin.Context) {
 		UserID:      uid,
 		Description: createdProduct.Description,
 		Action:      models.TransactionAction(models.Submitted),
-		ImageURL:    product.ImageURL,
+		ImageData:   product.ImageData,
 	}
 
 	transactionCreated, _ := controller.TransactionService.AddTransaction(&transaction)

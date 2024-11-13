@@ -3,12 +3,15 @@ package service
 import (
 	"backend/models"
 	"backend/repository"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 )
 
 var (
@@ -45,13 +48,13 @@ func (service *UserService) handleImage(user *models.User) error {
 		imageKey := fmt.Sprintf("users/%s", user.ImageURL)
 
 		// Use the GetImage utility to get the pre-signed URL
-		preSignedURL, err := GetImage(imageKey)
+		_, err := GetImage(imageKey)
 		if err != nil {
 			return fmt.Errorf("failed to retrieve image URL: %v", err)
 		}
 
 		// Replace the ImageURL with the pre-signed URL
-		user.ImageURL = preSignedURL
+		user.ImageURL = imageKey
 	} else {
 		// If no image URL is provided, set it to an empty string
 		user.ImageURL = ""
@@ -62,11 +65,12 @@ func (service *UserService) handleImage(user *models.User) error {
 func (service *UserService) Create(req *models.SignUp) error {
 	// Create a new user with the provided information
 	user := &models.User{
+		ID:        uuid.New(),
 		Email:     req.Email,
 		Name:      req.Name,
 		CreatedAt: time.Now().UTC(),
 		Verified:  false,
-		ImageURL:  req.ImageURL,
+		ImageURL:  req.ImageURL, // Initial value from request
 	}
 
 	// Hash the password and handle any errors
@@ -76,13 +80,89 @@ func (service *UserService) Create(req *models.SignUp) error {
 	}
 	user.Password = hashedPassword
 
+	// Handle image settings (generate pre-signed URL if image exists)
+	if req.ImageURL != "" {
+		// Log the image handling process
+		log.Printf("Handling image for user: %s", user.ID.String())
+		// Decode and upload image if base64 data is provided
+		imageData, err := base64.StdEncoding.DecodeString(req.ImageURL)
+		if err != nil {
+			log.Printf("Error decoding base64 image data for user %s: %v", user.Email, err)
+			return fmt.Errorf("failed to decode image data: %v", err)
+		}
+
+		// Generate a unique key for the image based on the user ID (or another identifier)
+		imageKey := fmt.Sprintf("user-images/%s.jpg", user.Email)
+
+		// Upload the image to S3 and get the pre-signed URL
+		_, err = PutImage(imageKey, imageData)
+		if err != nil {
+			log.Printf("Error uploading image for user %s: %v", user.Email, err)
+			return fmt.Errorf("failed to upload image: %v", err)
+		}
+
+		// Set the image URL in the user object
+		user.ImageURL = imageKey
+		log.Printf("Successfully uploaded image for user %s, URL: %s", user.Email, imageKey)
+	}
+
 	// Store the new user in the repository
 	if err := service.userRepo.Create(user); err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
+	return nil
+}
+
+func (service *UserService) UpdateUser(userID string, req *models.UpdateUser) error {
+	// Retrieve existing user data
+	user, err := service.userRepo.GetByID(userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	// Update user information, only if new values are provided
+	if req.NewUser != "" {
+		user.Name = req.NewUser // Only update if new name is provided
+	}
+
+	if req.NewImage != "" {
+		user.ImageURL = req.NewImage // Only update if new image URL is provided
+	}
+
 	// Handle image settings (generate pre-signed URL if image exists)
-	return service.handleImage(user)
+	if req.NewImage != "" {
+		// Log the image handling process
+		log.Printf("Handling image for user ID: %s", userID)
+
+		// Decode and upload image if base64 data is provided
+		imageData, err := base64.StdEncoding.DecodeString(req.NewImage)
+		if err != nil {
+			log.Printf("Error decoding base64 image data for user ID %s: %v", userID, err)
+			return fmt.Errorf("failed to decode image data: %v", err)
+		}
+
+		// Generate a unique key for the image based on the user ID
+		imageKey := fmt.Sprintf("%s.jpg", userID)
+
+		// Upload the image to S3 and get the pre-signed URL
+		imageURL, err := PutImage("users/"+imageKey, imageData)
+		if err != nil {
+			log.Printf("Error uploading image for user ID %s: %v", userID, err)
+			return fmt.Errorf("failed to upload image: %v", err)
+		}
+
+		// Set the image URL in the user object
+		user.ImageURL = imageKey
+		log.Printf("Successfully uploaded image for user ID %s, URL: %s", userID, imageURL)
+	}
+
+	// Persist updated user data
+	if err := service.userRepo.Update(userID, user); err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	return nil
 }
 
 func (service *UserService) Authenticate(email, password string) (string, error) {
@@ -124,26 +204,6 @@ func (service *UserService) GetDemographicInformation(id string) (*models.User, 
 
 	// Return the user object with the pre-signed URL (if available)
 	return user, nil
-}
-
-func (service *UserService) UpdateUser(userID string, req *models.UpdateUser) error {
-	// Retrieve existing user data
-	user, err := service.userRepo.GetByID(userID)
-	if err != nil {
-		return ErrUserNotFound
-	}
-
-	// Update user information
-	user.Name = req.NewUser
-	user.ImageURL = req.NewImage
-
-	// Persist updated user data
-	if err := service.userRepo.Update(userID, user); err != nil {
-		return fmt.Errorf("failed to update user: %w", err)
-	}
-
-	// Handle image settings (generate pre-signed URL if image exists)
-	return service.handleImage(user)
 }
 
 func (service *UserService) UpdateEmail(userID, newEmail string) error {

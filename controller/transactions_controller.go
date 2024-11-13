@@ -79,7 +79,7 @@ func (controller *TransactionController) AddTransactionToItem(c *gin.Context) {
 		UserID:      uid,
 		Description: transactionReq.Description, // Use the Description from the request
 		Action:      transactionReq.Action,      // Use the Action from the request (TransactionAction type)
-		ImageURL:    transactionReq.ImageURL,    // Use the ImageURL from the request
+		ImageData:   transactionReq.ImageData,   // Use the ImageURL from the request
 	}
 
 	// Add the transaction

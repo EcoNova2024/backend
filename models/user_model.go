@@ -43,8 +43,8 @@ type UpdatePassword struct {
 }
 
 type UpdateUser struct {
-	NewUser  string `json:"new_user" binding:"required,min=6"`
-	NewImage string `json:"new_image" binding:"required,min=6"`
+	NewUser  string `json:"new_user"`
+	NewImage string `json:"new_image"`
 }
 
 // SendPasswordResetEmail represents the data for sending a password reset email

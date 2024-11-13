@@ -23,8 +23,8 @@ definitions:
       description:
         description: Description of the transaction
         type: string
-      image_url:
-        description: URL of the transaction image
+      image_data:
+        description: Base64 encoded image data for the transaction
         type: string
       price:
         description: Price of the transaction
@@ -138,8 +138,8 @@ definitions:
       description:
         description: Description of the product
         type: string
-      image_url:
-        description: URL of the transaction image
+      image_data:
+        description: Base64 encoded image data for the transaction
         type: string
       name:
         description: Name of the product
@@ -206,11 +206,13 @@ definitions:
     enum:
     - available
     - restored
+    - restoredAvailable
     - sold
     type: string
     x-enum-varnames:
     - StatusAvailable
     - StatusRestored
+    - StatusRestoredAvailable
     - StatusSold
   models.Rating:
     properties:
@@ -806,7 +808,7 @@ paths:
             type: object
       summary: Get a user by email
       tags:
-      - users
+      - Users
     put:
       consumes:
       - application/json
