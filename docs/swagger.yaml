@@ -310,14 +310,9 @@ definitions:
   models.UpdateUser:
     properties:
       new_image:
-        minLength: 6
         type: string
       new_user:
-        minLength: 6
         type: string
-    required:
-    - new_image
-    - new_user
     type: object
   models.User:
     properties:
@@ -332,6 +327,8 @@ definitions:
       name:
         type: string
       password:
+        type: string
+      premium_until:
         type: string
       verified:
         type: boolean
@@ -425,7 +422,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new product with the given details
+      description: Create a new product with the given details, including Base64-encoded
+        image data
       parameters:
       - description: Product data
         in: body
@@ -433,6 +431,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.ProductRequest'
+      - description: Base64 encoded image data
+        in: body
+        name: image_data
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -440,7 +444,7 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.ProductResponse'
-      summary: Create a new product
+      summary: Create a new product with image
       tags:
       - Products
   /products/collaborative:
@@ -1002,6 +1006,39 @@ paths:
               type: string
             type: object
       summary: Send Password Reset Email
+      tags:
+      - Users
+  /users/premium:
+    put:
+      consumes:
+      - application/json
+      description: Extends or sets the premium subscription for a user by adding a
+        given number of days
+      parameters:
+      - description: Number of days to add
+        in: query
+        name: days
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Add premium days to a user's subscription
       tags:
       - Users
   /users/search:

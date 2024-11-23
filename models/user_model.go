@@ -10,13 +10,14 @@ import (
 
 // User represents the user model
 type User struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
-	Name      string    `gorm:"not null" json:"name"`
-	Email     string    `gorm:"not null;unique" json:"email"`
-	Password  string    `gorm:"not null" json:"password"`
-	Verified  bool      `gorm:"not null" json:"verified"`
-	CreatedAt time.Time `gorm:"default:current_timestamp" json:"created_at"`
-	ImageURL  string    `gorm:"not null" json:"image_url"`
+	ID           uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	Name         string    `gorm:"not null" json:"name"`
+	Email        string    `gorm:"not null;unique" json:"email"`
+	Password     string    `gorm:"not null" json:"password"`
+	Verified     bool      `gorm:"not null" json:"verified"`
+	CreatedAt    time.Time `gorm:"default:current_timestamp" json:"created_at"`
+	ImageURL     string    `gorm:"not null" json:"image_url"`
+	PremiumUntil string    `json:"premium_until"`
 }
 
 type SignUp struct {

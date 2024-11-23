@@ -4,6 +4,7 @@ package repository
 import (
 	"backend/models"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -92,4 +93,44 @@ func (r *UserRepository) FindByNamePrefix(name string) ([]models.User, error) {
 		return nil, result.Error
 	}
 	return users, nil
+}
+
+func (repo *UserRepository) AddPremiumByDay(userID string, day int) (*models.User, error) {
+	// Find the user by ID
+	var user models.User
+	if err := repo.db.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Parse the PremiumUntil string to time.Time
+	var premiumUntil time.Time
+	if user.PremiumUntil != "" {
+		var err error
+		premiumUntil, err = time.Parse(time.RFC3339, user.PremiumUntil)
+		if err != nil {
+			return nil, errors.New("failed to update user")
+		}
+	} else {
+		// If the PremiumUntil field is empty, initialize to zero time
+		premiumUntil = time.Time{}
+	}
+
+	// Update the premium subscription end date
+	now := time.Now()
+	if premiumUntil.Before(now) {
+		premiumUntil = now.AddDate(0, 0, day) // Add days if expired
+	} else {
+		premiumUntil = premiumUntil.AddDate(0, 0, day) // Extend current premium period
+	}
+
+	// Convert the updated time.Time back to RFC3339 string
+	user.PremiumUntil = premiumUntil.Format(time.RFC3339)
+
+	// Save changes to the database
+	if err := repo.db.Save(&user).Error; err != nil {
+		return nil, errors.New("failed to update user")
+	}
+
+	// Return the updated user
+	return &user, nil
 }

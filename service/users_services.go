@@ -360,3 +360,16 @@ func (s *UserService) GetByEmail(email string) (*models.User, error) {
 
 	return user, nil
 }
+func (s *UserService) AddPremiumDays(userID string, days int) (*models.User, error) {
+	if days <= 0 {
+		return nil, errors.New("days must be a positive integer")
+	}
+
+	// Call the repository method to update premium
+	updatedUser, err := s.userRepo.AddPremiumByDay(userID, days)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
+}

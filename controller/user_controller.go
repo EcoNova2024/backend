@@ -5,6 +5,7 @@ import (
 	"backend/models"
 	"backend/service"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -331,4 +332,46 @@ func (c *UserController) GetUserByEmail(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, user)
+}
+
+// AddPremiumDaysHandler adds premium days to a user's subscription
+// @Summary Add premium days to a user's subscription
+// @Description Extends or sets the premium subscription for a user by adding a given number of days
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param days query int true "Number of days to add"
+// @Success 200 {object} map[string]interface{} "Success"
+// @Failure 400 {object} map[string]interface{} "Invalid input"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /users/premium [put]
+func (c *UserController) AddPremiumDaysHandler(ctx *gin.Context) {
+	// Extract userID from context locals (middleware must set it)
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "userID not found in request context"})
+		return
+	}
+
+	// Parse the days from the query parameter
+	daysParam := ctx.Query("days")
+	days, err := strconv.Atoi(daysParam)
+	if err != nil || days <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid number of days"})
+		return
+	}
+
+	// Call the service layer to add premium days
+	updatedUser, err := c.userService.AddPremiumDays(userID.(string), days)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the updated user as a response
+	ctx.JSON(http.StatusOK, gin.H{
+		"message":      "Premium days added successfully",
+		"user":         updatedUser,
+		"premiumUntil": updatedUser.PremiumUntil,
+	})
 }

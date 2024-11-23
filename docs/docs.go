@@ -135,7 +135,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new product with the given details",
+                "description": "Create a new product with the given details, including Base64-encoded image data",
                 "consumes": [
                     "application/json"
                 ],
@@ -145,7 +145,7 @@ const docTemplate = `{
                 "tags": [
                     "Products"
                 ],
-                "summary": "Create a new product",
+                "summary": "Create a new product with image",
                 "parameters": [
                     {
                         "description": "Product data",
@@ -154,6 +154,15 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/models.ProductRequest"
+                        }
+                    },
+                    {
+                        "description": "Base64 encoded image data",
+                        "name": "image_data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
@@ -975,6 +984,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/premium": {
+            "put": {
+                "description": "Extends or sets the premium subscription for a user by adding a given number of days",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Add premium days to a user's subscription",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of days to add",
+                        "name": "days",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users/search": {
             "get": {
                 "description": "Retrieves up to 10 users whose names start with the provided prefix.",
@@ -1623,18 +1679,12 @@ const docTemplate = `{
         },
         "models.UpdateUser": {
             "type": "object",
-            "required": [
-                "new_image",
-                "new_user"
-            ],
             "properties": {
                 "new_image": {
-                    "type": "string",
-                    "minLength": 6
+                    "type": "string"
                 },
                 "new_user": {
-                    "type": "string",
-                    "minLength": 6
+                    "type": "string"
                 }
             }
         },
@@ -1657,6 +1707,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "premium_until": {
                     "type": "string"
                 },
                 "verified": {
