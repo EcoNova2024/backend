@@ -155,15 +155,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.ProductRequest"
                         }
-                    },
-                    {
-                        "description": "Base64 encoded image data",
-                        "name": "image_data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
                     }
                 ],
                 "responses": {
@@ -208,6 +199,35 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Image URL",
                         "name": "image_url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ProductResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/item-based": {
+            "get": {
+                "description": "Retrieve products based on item-based collaborative filtering",
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get item-based recommendations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product Id",
+                        "name": "product_id",
                         "in": "query",
                         "required": true
                     }
@@ -1645,11 +1665,13 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "submitted",
+                "submittedRevitalized",
                 "revitalized",
                 "sold"
             ],
             "x-enum-varnames": [
                 "Submitted",
+                "SubmittedRevitalized",
                 "Revitalized",
                 "Sold"
             ]

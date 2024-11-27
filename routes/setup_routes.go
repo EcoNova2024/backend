@@ -67,6 +67,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		products.GET("/random", productController.GetRandomProducts)                             // Get random products
 		products.GET("/rated", productController.GetRatedProductsByUserID)
 		products.GET("/random/paginated", productController.GetPaginatedRandomProducts)
+		products.GET("/item-based", productController.GetItemBased)
 	}
 
 	// Rating routes

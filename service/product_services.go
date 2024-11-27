@@ -134,6 +134,76 @@ func (s *ProductService) FetchCollaborativeRecommendations(userID string) ([]mod
 	return products, nil
 }
 
+// FetchItemBasedRecommendations fetches recommendations for an item based on collaborative filtering
+func (s *ProductService) FetchItemBasedRecommendations(productID string) ([]models.Product, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load .env file: %v", err)
+	}
+
+	// Get Flask server URL from environment variable (Item-based URL)
+	url := fmt.Sprintf("%s?product_id=%s", os.Getenv("FLASK_SERVER_URL2"), productID)
+	// url := fmt.Sprintf("http://localhost:5001/recommendations?product_id=%s", productID)
+
+	// Make the HTTP GET request to fetch recommendations
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close() // Ensure the response body is closed
+
+	// Check if the response status is OK
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error fetching recommendations: status %d", response.StatusCode)
+	}
+
+	// Parse the JSON response for item-based recommendations
+	var recommendations struct {
+		ProductID    string             `json:"product_id"`
+		SimilarItems map[string]float64 `json:"similar_items"`
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(&recommendations); err != nil {
+		return nil, err
+	}
+
+	// Extract product IDs from recommendations
+	recommendedProductIDs := make([]uuid.UUID, 0, len(recommendations.SimilarItems))
+	for productIDStr := range recommendations.SimilarItems {
+		productID, err := uuid.Parse(productIDStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid product ID: %s", productIDStr)
+		}
+		recommendedProductIDs = append(recommendedProductIDs, productID)
+	}
+
+	// If the number of recommended product IDs is less than the threshold, fetch random products
+	if len(recommendedProductIDs) < 10 {
+		additionalProducts, err := s.productRepo.GetRandomProducts()
+		if err != nil {
+			return nil, err
+		}
+
+		// Combine the recommended product IDs with the random products
+		for _, product := range additionalProducts {
+			recommendedProductIDs = append(recommendedProductIDs, product.ID)
+		}
+	}
+
+	// Retrieve product details based on the recommended product IDs
+	products, err := s.productRepo.GetProductsByIDs(recommendedProductIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Limit the number of products to a maximum of 10
+	if len(products) > 10 {
+		products = products[:10]
+	}
+
+	return products, nil
+}
+
 // GetRandomProducts retrieves random products for a user
 func (s *ProductService) GetRandomProducts() ([]models.Product, error) {
 	return s.productRepo.GetRandomProducts()

@@ -35,7 +35,6 @@ func NewProductController(productService *service.ProductService, transactionSer
 // @Accept       json
 // @Produce      json
 // @Param        product  body      models.ProductRequest  true  "Product data"
-// @Param        image_data  body   string                  true  "Base64 encoded image data"
 // @Success      201      {object}  models.ProductResponse
 // @Router       /products [post]
 func (controller *ProductController) Create(c *gin.Context) {
@@ -292,6 +291,53 @@ func (controller *ProductController) GetCollaborative(c *gin.Context) {
 		productResponse, err := controller.populateAdditionalProductData(&product)
 		if err != nil {
 			log.Printf("GetCollaborative: failed to fetch additional data for product %s: %v", product.ID.String(), err)
+			continue // Skip to the next product if there's an error
+		}
+		productResponses = append(productResponses, productResponse)
+	}
+
+	// Return successful response with populated product data
+	c.JSON(http.StatusOK, gin.H{"products": productResponses})
+}
+
+// GetItemBased retrieves products using an item-based collaborative filtering approach
+// @Summary Get item-based recommendations
+// @Tags         Products
+// @Description Retrieve products based on item-based collaborative filtering
+// @Param        product_id  query string true  "Product Id"
+// @Success 200 {array} models.ProductResponse
+// @Router /products/item-based [get]
+func (controller *ProductController) GetItemBased(c *gin.Context) {
+	// Attempt to retrieve the product ID from the context or the request parameters
+	productIDParam := c.Query("product_id")
+	if productIDParam == "" {
+		log.Println("Product ID not found in request")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Product ID is required"})
+		return
+	}
+
+	// Parse the product ID (this could be a string or uuid.UUID)
+	productID, err := uuid.Parse(productIDParam)
+	if err != nil {
+		log.Println("Invalid product ID:", productIDParam)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+
+	// Fetch item-based recommendations
+	products, err := controller.productService.FetchItemBasedRecommendations(productID.String())
+	if err != nil {
+		log.Printf("GetItemBased: service error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve item-based products"})
+		return
+	}
+
+	// Map the products to responses
+	var productResponses []models.ProductResponse
+	for _, product := range products {
+		productResponse, err := controller.populateAdditionalProductData(&product)
+		if err != nil {
+			log.Printf("GetItemBased: failed to fetch additional data for product %s: %v", product.ID.String(), err)
 			continue // Skip to the next product if there's an error
 		}
 		productResponses = append(productResponses, productResponse)

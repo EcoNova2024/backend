@@ -16,6 +16,16 @@ const (
 	StatusSold              ProductStatus = "sold"
 )
 
+// TransactionAction defines the possible actions for a transaction.
+type TransactionAction string
+
+const (
+	Submitted            TransactionAction = "submitted"
+	SubmittedRevitalized TransactionAction = "submittedRevitalized"
+	Revitalized          TransactionAction = "revitalized"
+	Sold                 TransactionAction = "sold"
+)
+
 type Product struct {
 	ID          uuid.UUID     `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primary_key"` // Unique identifier for the product
 	UserID      uuid.UUID     `json:"user_id" gorm:"type:uuid"`                                   // ID of the user who owns the product
@@ -67,15 +77,6 @@ type Transaction struct {
 	ImageURL    string            `gorm:"type:varchar(255)" json:"image_url"`          // URL of the transaction image
 	CreatedAt   time.Time         `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"` // Transaction timestamp
 }
-
-// TransactionAction defines the possible actions for a transaction.
-type TransactionAction string
-
-const (
-	Submitted   TransactionAction = "submitted"
-	Revitalized TransactionAction = "revitalized"
-	Sold        TransactionAction = "sold"
-)
 
 // TransactionRequest defines the fields for creating a transaction with optional image data
 type TransactionRequest struct {

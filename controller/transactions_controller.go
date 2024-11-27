@@ -91,17 +91,22 @@ func (controller *TransactionController) AddTransactionToItem(c *gin.Context) {
 	}
 	product.UserID = transaction.UserID
 	product.Price = transactionReq.Price
-	if transactionReq.Action == "revitalized" {
-		product.Status = "restored"
+	if transactionReq.Action == models.Revitalized {
+		// If the action is "revitalized", set the status to "restored"
+		product.Status = models.StatusRestored
 	} else {
-		if transaction.Action == "submited" {
-			product.Status = "available"
-
+		// If the action is "submitted" or "submittedRevitalized", set the status to "available"
+		if transactionReq.Action == models.Submitted {
+			product.Status = models.StatusAvailable
+		} else if transactionReq.Action == models.Sold {
+			// If the action is "sold", set the status to "sold"
+			product.Status = models.StatusSold
 		} else {
-			product.Status = "sold"
+			// If none of the above conditions are met, set the status to "restoredAvailable"
+			product.Status = models.StatusRestoredAvailable
 		}
-
 	}
+
 	err = controller.productService.Update(product)
 	if err != nil {
 		log.Printf("Error updating product status: %v", err)
